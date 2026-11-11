@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0A0C0F">
+<title>上海展会</title>
+<style>
+:root{
+  --bg:#0A0C0F; --surface:#14171C; --surface2:#1A1E24; --surface3:#20252C;
+  --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.13);
+  --text:#E9EBEE; --muted:#8A919B; --dim:#5E656E;
+  --accent:#2DD4A7; --accent-dim:rgba(45,212,167,.14);
+  --warn:#F5A524; --warn-dim:rgba(245,165,36,.15);
+  --purple:#A78BFA;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg)}
+body{
+  font-family:system-ui,-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  color:var(--text);display:flex;flex-direction:column;
+  font-size:15px;-webkit-text-size-adjust:100%;
+}
+
+/* ---------- 顶栏 ---------- */
+header{flex:none;padding:calc(10px + env(safe-area-inset-top)) 18px 0;background:var(--bg);
+  border-bottom:1px solid transparent;transition:border-color .2s}
+header.stuck{border-color:var(--line)}
+.htop{display:flex;align-items:baseline;gap:9px}
+.htop h1{font-size:21px;font-weight:600;margin:0;letter-spacing:.4px}
+.htop .meta{font-size:11.5px;color:var(--dim);margin-left:auto;text-align:right;line-height:1.4}
+.htop .meta .sync{display:block;font-size:10.5px;margin-top:2px;color:var(--dim)}
+
+/* ---------- 更新提示条 ---------- */
+.newbar{margin:0 18px 4px;padding:9px 12px;border-radius:10px;background:var(--accent-dim);
+  border:1px solid rgba(45,212,167,.28);color:var(--accent);font-size:12.5px;
+  display:flex;align-items:center;gap:8px}
+.newbar.hide{display:none}
+.newbar .x{margin-left:auto;color:var(--muted);font-size:14px;padding:0 4px}
+
+/* ---------- 搜索 ---------- */
+.search{margin:11px 0 0;height:38px;background:var(--surface2);border-radius:11px;
+  display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid transparent;
+  transition:border-color .18s,background .18s}
+.search.focus{border-color:rgba(45,212,167,.35);background:var(--surface)}
+.search svg{flex:none;color:var(--dim)}
+.search input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text);
+  font-size:14px;font-family:inherit;-webkit-user-select:text;user-select:text;
+  -webkit-appearance:none;appearance:none;padding:0;margin:0;line-height:1.3}
+.search input::-webkit-search-cancel-button{display:none;-webkit-appearance:none}
+.search input::placeholder{color:var(--dim)}
+.search .clr{flex:none;width:18px;height:18px;border-radius:50%;background:var(--surface3);
+  color:var(--muted);display:none;align-items:center;justify-content:center;font-size:12px;
+  line-height:1;padding-bottom:1px}
+.search.hasq .clr{display:flex}
+
+/* ---------- 筛选 chips ---------- */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 18px 10px;flex:none;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:6px 13px;border-radius:18px;background:var(--surface2);font-size:13px;
+  color:var(--muted);border:1px solid transparent;white-space:nowrap;transition:all .15s}
+.chip.on{background:var(--accent-dim);color:var(--accent);border-color:rgba(45,212,167,.32)}
+.chip.on.warn{background:var(--warn-dim);color:var(--warn);border-color:rgba(245,165,36,.32)}
+.chips.venue{padding-top:0;padding-bottom:12px}
+.chips.venue .chip{font-size:12px;padding:5px 10px;border-radius:14px;color:var(--dim)}
+
+/* ---------- 列表 ---------- */
+main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 18px;-webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain}
+main::-webkit-scrollbar{display:none}
+.pad{height:92px}
+
+.daygroup{position:sticky;top:0;background:var(--bg);padding:9px 0 7px;z-index:5;
+  display:flex;align-items:center;gap:8px}
+.daygroup .d{font-size:13px;font-weight:600}
+.daygroup .w{font-size:11.5px;color:var(--dim)}
+.daygroup .rel{font-size:11px;color:var(--accent);background:var(--accent-dim);
+  padding:2px 7px;border-radius:6px;margin-left:auto}
+.daygroup .rel.gray{color:var(--muted);background:var(--surface2)}
+.daygroup .rel.warn{color:var(--warn);background:var(--warn-dim)}
+
+.card{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);
+  position:relative}
+.card:active{opacity:.6}
+.card.feat{background:linear-gradient(90deg,rgba(245,165,36,.055),rgba(245,165,36,0) 58%)}
+.datebox{flex:none;width:40px;text-align:center;padding-top:1px}
+.datebox .m{font-size:10px;color:var(--dim);letter-spacing:.5px}
+.datebox .n{font-size:19px;font-weight:600;line-height:1.15;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.card.live .datebox .n{color:var(--accent)}
+.cardbody{flex:1;min-width:0}
+.name{font-size:14.5px;font-weight:500;line-height:1.45;margin-bottom:6px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card.feat .name{color:#FBF3E4}
+.fbar{display:inline-block;width:3px;height:12px;background:var(--warn);border-radius:2px;
+  margin-right:6px;vertical-align:-1px}
+.meta{display:flex;flex-wrap:wrap;gap:5px 9px;font-size:11.5px;color:var(--muted);
+  align-items:center}
+.meta b{font-weight:400;color:#A7AEB8}
+.tag{font-size:10.5px;padding:2px 6px;border-radius:5px;background:var(--surface2);
+  color:var(--muted);white-space:nowrap}
+.tag.feat{background:var(--warn-dim);color:var(--warn);font-weight:500}
+.tag.topic{background:rgba(167,139,250,.14);color:var(--purple)}
+.tag.live{background:var(--accent-dim);color:var(--accent)}
+.tag.fav{background:rgba(45,212,167,.10);color:var(--accent)}
+.tag.trade{background:rgba(240,113,120,.16);color:#F07178}
+.tag.open{background:var(--accent-dim);color:var(--accent)}
+.tag.dead{background:rgba(240,113,120,.16);color:#F07178;margin-left:4px}
+.tag.soon{background:rgba(245,165,36,.14);color:var(--warn);margin-left:4px}
+.tag.ok{background:var(--accent-dim);color:var(--accent);margin-left:4px}
+.summary{margin-top:6px;padding:7px 9px;border-radius:8px;background:rgba(240,113,120,.10);
+  border-left:2px solid rgba(240,113,120,.55);font-size:12.5px;line-height:1.65;color:#F3B3B7}
+.chan{border:1px solid var(--line2);border-radius:9px;padding:8px 9px;margin-bottom:7px;background:var(--surface2)}
+.chan:last-child{margin-bottom:0}
+.chan.off{opacity:.72}
+.chan .ch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--text);font-weight:600}
+.chan .line{font-size:12.5px;line-height:1.62;color:var(--muted);margin-top:4px}
+.chan .line b{color:var(--text);font-weight:500}
+.hint{color:var(--dim);font-size:12px;line-height:1.6}
+.mini{margin-top:9px;background:var(--surface2);border:1px solid var(--line2);color:var(--accent);
+  font-size:12px;padding:7px 11px;border-radius:9px;font-family:inherit;display:inline-block}
+.mini:active{opacity:.7}
+.bell{position:absolute;right:0;top:14px;width:16px;height:16px;color:var(--accent);opacity:0}
+.card.hasrem .bell{opacity:.85}
+.card.hasrem .cardbody{padding-right:17px}
+
+.empty{text-align:center;color:var(--dim);font-size:13.5px;padding:64px 20px;line-height:1.9}
+.empty b{display:block;font-size:15px;color:var(--muted);font-weight:500;margin-bottom:6px}
+.foot{text-align:center;color:var(--dim);font-size:11px;padding:22px 0 8px;line-height:1.8}
+
+/* ---------- 月历 ---------- */
+.calbar{display:flex;align-items:center;gap:10px;padding:4px 0 12px}
+.calbar .ym{font-size:16px;font-weight:600;min-width:104px}
+.calbar .nav{width:30px;height:30px;border-radius:9px;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px}
+.calbar .nav:active{background:var(--surface3)}
+.calbar .today-btn{margin-left:auto;font-size:12px;color:var(--accent);
+  background:var(--accent-dim);padding:5px 11px;border-radius:9px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0;margin-bottom:6px}
+.grid .wk{text-align:center;font-size:11px;color:var(--dim);padding:4px 0 6px}
+.cell{position:relative;height:46px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;border-radius:10px}
+.cell.blank{visibility:hidden}
+.cell .dn{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cell.out .dn{color:#3C424A}
+.cell.today .dn{color:var(--accent);font-weight:600}
+.cell.sel{background:var(--surface2)}
+.cell.sel .dn{color:var(--text);font-weight:600}
+.cell .dots{display:flex;gap:3px;height:5px;align-items:center}
+.cell .dots i{width:4px;height:4px;border-radius:50%;background:#3E4650;display:block}
+.cell .dots i.a{background:var(--warn)}
+.cell .cnt{position:absolute;top:3px;right:5px;font-size:9px;color:var(--dim)}
+
+/* ---------- 详情面板 ---------- */
+.sheet{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.58);z-index:40;display:none;
+  align-items:flex-end}
+.sheet.show{display:flex}
+.panel{background:var(--surface);width:100%;border-radius:22px 22px 0 0;
+  padding:8px 18px calc(22px + env(safe-area-inset-bottom));max-height:80%;
+  overflow-y:auto;animation:up .22s ease-out;overscroll-behavior:contain}
+@keyframes up{from{transform:translateY(34px);opacity:.55}to{transform:none;opacity:1}}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--line2);margin:0 auto 15px}
+.panel h2{font-size:16.5px;line-height:1.5;margin:0 0 6px;font-weight:600}
+.panel .subline{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.row{display:flex;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:13px}
+.row .k{flex:none;width:52px;color:var(--dim);font-size:12.5px}
+.row .v{flex:1;color:#C9CED6;line-height:1.6;word-break:break-word;-webkit-user-select:text;
+  user-select:text}
+.row .v a{color:var(--accent);text-decoration:none;word-break:break-all}
+.actions{display:flex;gap:9px;margin-top:18px}
+.btn{flex:1;height:44px;border-radius:12px;border:none;font-size:13.5px;font-weight:500;
+  font-family:inherit;background:var(--surface2);color:var(--text);padding:0 6px}
+.btn:active{opacity:.75}
+.btn.primary{background:var(--accent);color:#04231A}
+.btn.on{background:var(--accent-dim);color:var(--accent)}
+.actions2{display:flex;gap:9px;margin-top:9px}
+
+/* ---------- 底部 Tab ---------- */
+.tabbar{flex:none;display:flex;background:rgba(10,12,15,.96);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.tab{flex:1;padding:8px 0 9px;text-align:center;font-size:10.5px;color:var(--dim);
+  display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+.tab.on{color:var(--accent)}
+.tab .badge{position:absolute;top:5px;left:50%;margin-left:4px;min-width:15px;height:15px;
+  border-radius:8px;background:var(--warn);color:#231502;font-size:9.5px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* ---------- Toast ---------- */
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(10px);
+  background:rgba(32,37,44,.97);color:var(--text);font-size:13px;padding:10px 16px;
+  border-radius:11px;z-index:90;opacity:0;transition:all .22s;pointer-events:none;
+  max-width:78vw;text-align:center;line-height:1.5;border:1px solid var(--line2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="htop">
+    <h1>上海展会</h1>
+    <div class="meta" id="hmeta"></div>
+  </div>
+  <div class="search" id="searchBox">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <circle cx="6.5" cy="6.5" r="4.8" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M10.2 10.2L13 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+    <input id="q" type="search" placeholder="搜索展会、场馆、主办方" autocomplete="off"
+           autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="clr" id="clr">✕</div>
+  </div>
+</header>
+
+<nav class="chips" id="chipsTopic"></nav>
+<nav class="chips venue" id="chipsVenue"></nav>
+
+<div class="newbar hide" id="newbar"></div>
+
+<main id="main"></main>
+
+<div class="tabbar">
+  <div class="tab on" data-tab="timeline">
+    <svg width="19" height="19" viewBox="0 0 19 19" fill="none">
+      <path d="M2.5 5h14M2.5 9.5h14M2.5 14h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>时间轴
+  </div>
+  <div class="tab" data-tab="calendar">
+    <svg width="19" height="19" viewBox="0 0 19 19" fill="none">
+      <rect x="2.5" y="3.5" width="14" height="13" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M6 2v3M13 2v3M2.5 8h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>日历
+  </div>
+  <div class="tab" data-tab="fav">
+    <svg width="19" height="19" viewBox="0 0 19 19" fill="none">
+      <path d="M9.5 15.5s-6-3.6-6-7.4a3.4 3.4 0 0 1 6-2 3.4 3.4 0 0 1 6 2c0 3.8-6 7.4-6 7.4z"
+            stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    </svg>关注
+  </div>
+</div>
+
+<div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* 老 WebView 兜底 */
+if (!String.prototype.padStart) {
+  String.prototype.padStart = function(len, ch) {
+    let s = String(this); ch = ch || " ";
+    while (s.length < len) s = ch + s;
+    return s;
+  };
+}
+let DATA = {"updated":"2026-11-11 08:15:15","city":"上海","count":105,"events":[{"id":"GOV-5b8e47c9b8","name":"2026年佳士得上海秋季珠宝手表手袋预展","start":"2026-11-09","end":"2026-11-13","venue":"上海市中山东一路1号久事国际艺术中心4层佳士得艺术空间","venue_short":"艺术中心","district":"","category":"文化创意","topics":["时尚纺织"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"佳士得拍卖（上海）有限公司","official_type":"其他涉外展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=83f45d6a-6bc3-4a9d-a825-8ecc1c4851c8","kind":"展览排期","source":"GOV","status":"ongoing"},{"id":"GOV-2298ca89f4","name":"2026上海机器人及人工智能技术展览会","start":"2026-11-10","end":"2026-11-12","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":["AI","机器人"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海微电机研究所（中国电子科技集团公司第二十一研究所）","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=253618db-9cd3-41c3-9581-19ba222af3fe","kind":"展览排期","source":"GOV","status":"ongoing"},{"id":"GOV-67c8c51cd4","name":"2026国际葡萄酒与烈酒贸易展览会","start":"2026-11-10","end":"2026-11-12","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"食品饮料","topics":["食品饮料"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海博华国际展览有限公司 杜塞尔多夫展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=62101d6b-961b-4eb6-a1a0-c496f886fdd9","kind":"展览排期","source":"GOV","status":"ongoing"},{"id":"SNIEC-ecd68cbda1","name":"中国国际第30届小电机/磁性材料/机器人技术研讨会暨展览会","start":"2026-11-10","end":"2026-11-12","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":["机器人"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.wdj21.com/","kind":"展览排期","source":"SNIEC","status":"ongoing"},{"id":"SNIEC-5488e22f27","name":"中国（上海）国际电子展览","start":"2026-11-10","end":"2026-11-12","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://shanghai.icef.com.cn/ShowInfo14351.html","kind":"展览排期","source":"SNIEC","status":"ongoing"},{"id":"GOV-daa1dd3dfc","name":"第28届上海国际礼品、文创产品及家居用品展览会","start":"2026-11-10","end":"2026-11-12","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"家居建材","topics":["家居建材","文创艺术"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"购票入场","summary":"面向大众售票，建议提前买，现场可能限流。","how":"面向大众，需购票入场；建议提前在官方渠道买，现场可能限流","where":"官方公众号或小程序，也可在大麦、猫眼搜展会名","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"门票","who":"所有人","where":"官方公众号或小程序，也可在大麦、猫眼搜展会名","window":"开展前 1–2 个月开售","steps":"","note":"热门场次会提前售罄","deadline":"","state":""}]},"halls":"","organizer":"上海博华国际展览有限公司 上海雅辉展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=fa73d2e6-e50a-4b6f-bdd6-e580d541f20c","kind":"展览排期","source":"GOV","status":"ongoing"},{"id":"GOV+SNIEC-e0bcd38e0c","name":"第二十九届FHC上海环球食品展","start":"2026-11-10","end":"2026-11-12","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"食品饮料","topics":["食品饮料"],"featured":true,"featured_tag":"亚太最大","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海博华国际展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=dccb9c9d-e58f-456c-ab6f-7b9e32615bc7","kind":"展览排期","source":"GOV+SNIEC","status":"ongoing"},{"id":"GOV-0b0c2f6187","name":"第四十二届上海国际特许经营及连锁加盟展览会","start":"2026-11-10","end":"2026-11-12","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"消费零售","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海博华国际展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=54ff134a-02b3-4a41-9702-b373ad542bc4","kind":"展览排期","source":"GOV","status":"ongoing"},{"id":"GOV-c405e4c876","name":"2026上海国际智能家用电采暖展览会","start":"2026-11-11","end":"2026-11-13","venue":"上海世贸商城展览馆","venue_short":"世贸商城","district":"长宁区","category":"科技互联网","topics":["家居建材"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"尹宸会展服务(上海)有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=2884aea1-33ed-4f9e-9cc2-21c161cf299f","kind":"展览排期","source":"GOV","status":"ongoing"},{"id":"GOV-705777d523","name":"2026上海廿一当代艺术博览会","start":"2026-11-11","end":"2026-11-14","venue":"上海展览中心","venue_short":"展览中心","district":"静安区","category":"文化创意","topics":["文创艺术"],"featured":true,"featured_tag":"国内顶级","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海零等于一文化传播有限公司","official_type":"其他涉外展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=996ac6a5-fa47-4e94-882e-958f8316ce75","kind":"展览排期","source":"GOV","status":"ongoing"},{"id":"GOV-dd2bf99a2f","name":"2026第13届上海国际电热技术与设备展览会","start":"2026-11-11","end":"2026-11-13","venue":"上海世贸商城展览馆","venue_short":"世贸商城","district":"长宁区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"尹宸会展服务(上海)有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=9a227fff-28de-40bc-b642-c1614683e30f","kind":"展览排期","source":"GOV","status":"ongoing"},{"id":"GOV-7a0083565f","name":"2026上海国际艺术书展","start":"2026-11-12","end":"2026-11-15","venue":"上海市黄浦区江西中路215号老市府大楼","venue_short":"其他场馆","district":"市黄浦区","category":"文化创意","topics":["文创艺术"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"中国图书进出口上海有限公司","official_type":"其他涉外展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=3fac3d26-183f-4d8e-8dfe-2c2478e7d704","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-0a8d96a3b5","name":"2026上海国际珠宝展览会","start":"2026-11-13","end":"2026-11-16","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"文化创意","topics":["时尚纺织"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海智展暄和信息服务有限公司","official_type":"其他涉外展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=ea0b66c3-eb22-43d1-b166-e92c44c5372a","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-f2b5cd4f6d","name":"2026上海银发科技产业博览会","start":"2026-11-13","end":"2026-11-15","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"科技互联网","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海迈世展览展示服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=c2157f45-b882-4b6a-a004-605a1a12717e","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-83b100e5ad","name":"2026中国（上海）国际童书展","start":"2026-11-13","end":"2026-11-15","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"综合其他","topics":["文创艺术"],"featured":true,"featured_tag":"亚太最大","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海融博会展有限公司","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=585040bd-2120-440d-8274-1806c70e972c","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV+SNIEC-eca9fb880b","name":"2026中国国际慕尼黑分析生化展","start":"2026-11-16","end":"2026-11-18","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"医疗健康","topics":[],"featured":true,"featured_tag":"国际顶级","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"慕尼黑展览（上海）有限公司","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=531a9868-68c4-4f8f-bcc2-eb905f14c4e9","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-415afc08e8","name":"2026包装世界（上海）博览会","start":"2026-11-16","end":"2026-11-18","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"杜塞尔多夫展览（上海）有限公司 雅展展览服务(上海)有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=f4dc9976-98a8-4986-9bcf-694c33054c08","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"SNIEC-c852906a4e","name":"上海国际车用空调及冷藏技术展览会","start":"2026-11-16","end":"2026-11-18","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"汽车交通","topics":["汽车"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://autocoolexpo.com/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"GOV-0cf38e9c16","name":"第24届上海国际车用空调及热管理技术展览会","start":"2026-11-16","end":"2026-11-18","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"汽车交通","topics":["汽车"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海艾歌展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=e895397f-a7c0-48f3-8a04-71c37ff1226a","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-0cbc29cf05","name":"全球海洋能源与海洋工程装备产业链展览会2026","start":"2026-11-17","end":"2026-11-19","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"能源环保","topics":["新能源"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海决策者经济顾问股份有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=797f16ba-689a-4023-8b03-641d4e7eadbe","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-d2b3031230","name":"2026上海国际功能性纺织品(秋冬)展览会","start":"2026-11-18","end":"2026-11-19","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"纺织服装","topics":["时尚纺织"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海腾达展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=edfa25a2-fd42-42fe-a1b1-711cb791e17d","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-cdce9dc39c","name":"第十一届亚洲过滤与分离工业展览会","start":"2026-11-18","end":"2026-11-20","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"英富曼企业管理（上海）有限公司 上海希达科技有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=ce192d55-3af0-4fef-a77a-bc546a1a9c9e","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-becbe3689e","name":"2026上海国际休闲度假博览会","start":"2026-11-19","end":"2026-11-22","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海现代国际展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=19d57346-6cf2-4656-92ff-41bb9aee0969","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-bfdfaffb6e","name":"2026上海国际旅游景区装备博览会","start":"2026-11-19","end":"2026-11-22","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海现代国际展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=c32b7c10-d4dc-48ac-ade6-8b1f54ba5129","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-d4de91ffc1","name":"2026国际工艺创新博览会","start":"2026-11-19","end":"2026-11-23","venue":"上海展览中心","venue_short":"展览中心","district":"静安区","category":"科技互联网","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海阁爱文化发展有限公司","official_type":"其他涉外展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=315af6ec-deec-4312-a963-e407261fdb13","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"NECC-f2883e6370","name":"第七届长三角国际文化产业博览会","start":"2026-11-19","end":"2026-11-22","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"文化创意","topics":["文创艺术"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"6.2H、7.2H","organizer":"","official_type":"","website":"","kind":"展览排期","source":"NECC","status":"upcoming"},{"id":"GOV-622ff836bd","name":"2026上海第三十二届海外置业移民留学展览会","start":"2026-11-20","end":"2026-11-22","venue":"上海世贸商城展览馆","venue_short":"世贸商城","district":"长宁区","category":"教育人才","topics":["出海跨境"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海企顺展览服务有限公司","official_type":"国内展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=0709feae-cc31-4079-90c2-e6b6cae70f64","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"NECC-9a7d7a94fe","name":"2026中国国际纺织机械展览会暨ITMA亚洲展览会","start":"2026-11-20","end":"2026-11-24","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"工业制造","topics":["时尚纺织"],"featured":true,"featured_tag":"全球旗舰","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"3H、4.1H、5.1H、6.1H、7.1H、8.1H、NH","organizer":"","official_type":"","website":"https://www.citme.com.cn","kind":"展览排期","source":"NECC","status":"upcoming"},{"id":"GOV-8816aec808","name":"2026虹桥国际科技博览会","start":"2026-11-20","end":"2026-11-22","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"科技互联网","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"英富曼企业管理（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=d5535392-a7ef-4f63-806b-182effa10227","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"NECC-9875dbe7be","name":"2026虹桥国际科技周","start":"2026-11-20","end":"2026-11-22","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"科技互联网","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"1.1H、2.1H、NH","organizer":"","official_type":"","website":"","kind":"展览排期","source":"NECC","status":"upcoming"},{"id":"GOV-1f0f1329ca","name":"第二十八届上海房车露营展","start":"2026-11-20","end":"2026-11-22","venue":"上海汽车会展中心","venue_short":"汽车会展","district":"嘉定区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海友擎展览有限公司","official_type":"国内展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=b83d4d7d-f5c2-4714-8a96-dbb1a4e5c6ae","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV+NECC-596c318cab","name":"2026WePlay文化展","start":"2026-11-21","end":"2026-11-22","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"文化创意","topics":["文创艺术"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"1.2H、2.2H","organizer":"上海均茉文化传播有限公司","official_type":"国内展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=8ea2acd3-db3c-4861-84c8-a00738dd2b24","kind":"展览排期","source":"GOV+NECC","status":"upcoming"},{"id":"GOV-b641f4c319","name":"第十四届上海玩偶展","start":"2026-11-21","end":"2026-11-21","venue":"上海跨国采购会展中心","venue_short":"跨国采购","district":"普陀区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海尔香文化传播有限公司","official_type":"国内展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=baefac70-c35e-4612-b1c9-44815fa120f2","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV+SNIEC-3d497135ca","name":"2026中国国际工程机械、建材机械、矿山机械、工程车辆及设备博览会","start":"2026-11-24","end":"2026-11-27","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":["家居建材"],"featured":true,"featured_tag":"亚洲最大","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"慕尼黑展览（上海）有限公司","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=7e5cce48-56ce-434d-9a89-bf57f8e90151","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV-4d727fb4c6","name":"2026第三届上海亚洲物流博览会","start":"2026-11-24","end":"2026-11-25","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"环亚物博（上海）会展有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=6150065b-348e-497b-94e2-5cf0ad1bedbf","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-adc4aa9b72","name":"2026上海国际海洋科学技术装备设备展览会","start":"2026-11-25","end":"2026-11-27","venue":"上海跨国采购会展中心","venue_short":"跨国采购","district":"普陀区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"中青博联整合营销顾问股份有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=99c72148-eddf-4afb-ab1d-0aee91e45d35","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-5848e9e171","name":"2026上海国际智慧康养产业博览会","start":"2026-11-27","end":"2026-11-29","venue":"上海展览中心","venue_short":"展览中心","district":"静安区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海丰之米会展有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=7e596b51-f853-4b76-9ccd-48d92e929177","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"NECC-b47ebc3ab5","name":"2026上海国际汽车配件、维修检测诊断设备及服务用品展览会","start":"2026-12-02","end":"2026-12-05","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"汽车交通","topics":["汽车","医疗健康"],"featured":true,"featured_tag":"全球最大","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"1.1H、2.1H、1.2H、2.2H、3H、4.1H、5.1H、5.2H、6.1H、6.2H、7.1H、7.2H、8.1H、8.2H","organizer":"","official_type":"","website":"","kind":"展览排期","source":"NECC","status":"upcoming"},{"id":"SNIEC-da9ff4ed1f","name":"2026 上海国际储能技术应用展览会/氢能特展","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":["新能源"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.es-shanghai.com/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"GOV-9a50a16d9e","name":"2026上海国际冶金工业展览会","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海申仕展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=d27f9646-fc26-4d30-9dee-309b6991064e","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-36d7db945f","name":"2026上海国际赛事文化及体育用品博览会","start":"2026-12-03","end":"2026-12-05","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"文化创意","topics":["文创艺术"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"东浩兰生会展集团股份有限公司 上海市体育总会","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=66d02054-4e4e-4cf6-8424-a515b0416b81","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-5848fc9003","name":"2026第三十一届上海国际茶业交易博览会","start":"2026-12-03","end":"2026-12-06","venue":"上海世贸商城展览馆","venue_short":"世贸商城","district":"长宁区","category":"食品饮料","topics":["食品饮料"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海瓷茗实业有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=637b2622-8bb0-4920-8663-52c5bfe73a01","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV+SNIEC-d5b9f78c8f","name":"CDCE国际数据中心及云计算产业展览会/绿色智算中心及算力产业展览会","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":["算力"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"雅展展览服务(上海)有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=25bcda66-e5ad-489c-a9d1-3d72f9c1c6b6","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"SNIEC-d63011c093","name":"MTM金属世界博览会/ 第17届上海国际钢管展/ 上海国际合金材料展/ 上海国际金属线材展","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.mtmexpo.cn/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"SNIEC-8c2aecf831","name":"MTM金属世界博览会/ 第22届上海国际铸造压铸、锻造、热处理展","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.chinacsfe.com/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"SNIEC-3f7741d030","name":"MTM金属世界博览会/ 第27届上海国际冶金工业展/ 第13届上海国际耐火材料展/ 中国国际热工技术及工业炉展","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.mtmexpo.cn/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"SNIEC-c1d0c23359","name":"第三十三届中国国际电力设备及技术展览会","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":[],"featured":true,"featured_tag":"亚洲旗舰","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.epchinashow.com/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"GOV-4840cc5cfd","name":"第八届零售生鲜食材展","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"消费零售","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海市自有品牌协会 上海亚东展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=001909ec-4e33-44cb-9040-403463a831f7","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV+SNIEC-7ea671b37d","name":"第十九届全球零售自有品牌产品亚洲展","start":"2026-12-03","end":"2026-12-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"消费零售","topics":["出海跨境"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海市自有品牌协会 上海亚东展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=d3b734c3-6ce5-43ec-bcce-4d290577efd8","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV-0d5d733919","name":"2026上海国际珠宝玉石首饰展览会（冬季）","start":"2026-12-04","end":"2026-12-07","venue":"上海跨国采购会展中心","venue_short":"跨国采购","district":"普陀区","category":"文化创意","topics":["时尚纺织"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海海名会展有限公司","official_type":"其他涉外展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=4a02d2f7-3889-440f-90e3-ce4b6ea784fc","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-6537ed929b","name":"2026上海国际高端房产展览会","start":"2026-12-04","end":"2026-12-06","venue":"上海展览中心","venue_short":"展览中心","district":"静安区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海新美阁展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=e71a1e82-fb07-4a7e-a832-22ed9b2fb4a8","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-3c8b906ba2","name":"2026上海半导体暨光通信展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":["半导体"],"featured":true,"featured_tag":"国内旗舰","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海辉科展览服务有限公司","official_type":"国内展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=8a40d68b-f8eb-4d4c-b0ef-89998641a056","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-9790b72132","name":"2026上海国际人形机器人与机器人全产业链展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":["机器人"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海贝瑞克展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=2d2b3302-7224-4939-8022-b74edff681f7","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV+SNIEC-481f5298bd","name":"2026上海国际先进轨道交通技术展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"汽车交通","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"晟格会展（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=43f47acb-3c8e-47fd-b288-9b166b9b40dc","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV-af3b086f54","name":"2026上海国际公共交通博览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"晟格会展（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=c70f1038-a792-47c3-92b5-49431ec2623c","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"SNIEC-91588beb91","name":"2026上海国际半导体材料、部件展览会暨光通信技术展","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":["半导体"],"featured":true,"featured_tag":"国内旗舰","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.xse-expo.cn","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-d171fcad65","name":"2026上海国际发泡材料技术工业展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"高美七汇展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=2657c639-2b59-4a18-aa6a-10da8d45cc28","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-cde20bc050","name":"2026上海国际垃圾焚烧发电暨固废处理技术展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海怡涵展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=fed6e7d2-e9c0-4864-81e7-df0005944f4a","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV-a6680fbab5","name":"2026上海国际智慧口岸科技装备展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"科技互联网","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海港汇智会展有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=67e94a85-dc5e-4599-ab9f-d92ab53d2b8f","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV+SNIEC-b8424f907d","name":"2026上海国际热泵精馏展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海怡涵展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=06ea03aa-27c5-471e-93f9-34b65da3dd4e","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-156feb8654","name":"2026上海国际燃烧热能产业展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海怡涵展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=59ae64b1-75e2-4402-8c3f-b3513470ae8a","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-ade68a0273","name":"2026上海国际蒸发及结晶技术设备展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海怡涵展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=afb67119-d5bb-4ebe-9655-0da83d7d2930","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"SNIEC-474e1dac78","name":"2026上海国际超节点产业链展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"综合其他","topics":["算力"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://%20www.spod-expo.com/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-46a8723c5f","name":"2026上海洁净技术与设备展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海展业展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=eaeff025-d9a8-4a67-b719-3b2ef7a4769c","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-730fe242fe","name":"2026上海物联网暨消费电子展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海辉科展览服务有限公司","official_type":"国内展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=db78f4af-5e1f-40b9-9bd3-710247d22b9d","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"NECC-91de816d50","name":"2026中国国际轴承及其专用装备展览会","start":"2026-12-09","end":"2026-12-12","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"工业制造","topics":[],"featured":true,"featured_tag":"全球旗舰","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"3H、4.1H、NH","organizer":"","official_type":"","website":"","kind":"展览排期","source":"NECC","status":"upcoming"},{"id":"GOV+SNIEC-901c75866d","name":"2026亚洲保温展","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"建筑地产","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海展业展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=f6d79288-593c-45a8-bd23-21fb2c6a3553","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-e2c30eec23","name":"2026亚洲绿色工厂设计、建设及厂务展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"工业制造","topics":["文创艺术"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海展业展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=cb87a810-5fb8-432b-8d70-3c3cdcd118c3","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"SNIEC-d6e6f36bf9","name":"2026全球物联网大会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.giotexpo.com/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-7cf2f202c8","name":"2026第17届上海国际热管理材料技术博览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"博寒展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=a589a9a1-9f22-400a-99df-df1bc0cbefb7","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-92fe0ead38","name":"2026第八届上海国际算力数据中心液冷技术展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":["算力"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"博寒展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=5bf7b2c1-c746-48b0-82f3-fe2305f8fb9e","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-e9c0b1a0f7","name":"2026第十五届上海国际客车展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"汽车交通","topics":["汽车"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"晟格会展（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=b6e35627-37b9-4d37-8505-e272189a0dbb","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"SNIEC-f887f505da","name":"上海废弃物处理及资源利用展览会","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"","official_type":"","website":"http://www.irreexpo.com/","kind":"展览排期","source":"SNIEC","status":"upcoming"},{"id":"GOV+SNIEC-e1802168a7","name":"第五届EESA储能展","start":"2026-12-09","end":"2026-12-11","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":["新能源"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海领储信息咨询有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=9a8c23cf-8699-4cac-964c-03b1224811c7","kind":"展览排期","source":"GOV+SNIEC","status":"upcoming"},{"id":"GOV+NECC-b4a046aa5e","name":"2026上海动漫文化博览会","start":"2026-12-26","end":"2026-12-27","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"文化创意","topics":["动漫游戏","文创艺术"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"购票入场","summary":"面向大众售票，建议提前买，现场可能限流。","how":"面向大众，需购票入场；建议提前在官方渠道买，现场可能限流","where":"官方公众号或小程序，也可在大麦、猫眼搜展会名","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"门票","who":"所有人","where":"官方公众号或小程序，也可在大麦、猫眼搜展会名","window":"开展前 1–2 个月开售","steps":"","note":"热门场次会提前售罄","deadline":"","state":""}]},"halls":"1.1H、2.1H、3H、4.1H、5.1H、6.1H、7.1H、8.1H、NH","organizer":"上海摩都文化传播有限公司 上海大世界文化运营有限公司,上海贸促展览展示有限公司,上海摩都会展有限公司","official_type":"国内展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=7de36e37-4316-469e-9686-af8a98c8a01c","kind":"展览排期","source":"GOV+NECC","status":"upcoming"},{"id":"GOV-e36f11d05c","name":"2027第十七届上海紧固件专业展","start":"2027-03-03","end":"2027-03-05","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海上搜展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=21c1e6d5-d6a3-4a1f-8212-45fdfe83a819","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-57e59963a6","name":"2027慕尼黑激光与光电中国展","start":"2027-03-08","end":"2027-03-10","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":["半导体"],"featured":true,"featured_tag":"国际顶级","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"慕尼黑展览（上海）有限公司","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=aad40295-d904-4b3b-97ec-4e17b82c412d","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-c68bfdcb59","name":"2027国际件杂货运输展","start":"2027-03-17","end":"2027-03-18","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海浩成展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=2617bf69-9a2c-4e19-b6ee-9a7b66440905","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-65e8e13ad3","name":"2027第二届上海国际商业航天展览会","start":"2027-03-17","end":"2027-03-19","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"科技互联网","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海励闻展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=90985ae6-09f0-4419-83bf-c6109031ac5b","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-3111cf0f1f","name":"2027首届绿色风光氢氨醇（上海）展览会","start":"2027-03-18","end":"2027-03-19","venue":"上海世贸商城展览馆","venue_short":"世贸商城","district":"长宁区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"港迈能源（上海）有限公司","official_type":"国内展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=798dc5df-7c4d-426f-9a14-1fc0378de3b9","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-8cef1044a7","name":"2027宠物生活方式展览会","start":"2027-03-19","end":"2027-03-22","venue":"上海展览中心","venue_short":"展览中心","district":"静安区","category":"消费零售","topics":["宠物"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"购票入场","summary":"面向大众售票，建议提前买，现场可能限流。","how":"面向大众，需购票入场；建议提前在官方渠道买，现场可能限流","where":"官方公众号或小程序，也可在大麦、猫眼搜展会名","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"门票","who":"所有人","where":"官方公众号或小程序，也可在大麦、猫眼搜展会名","window":"开展前 1–2 个月开售","steps":"","note":"热门场次会提前售罄","deadline":"","state":""}]},"halls":"","organizer":"上海开视文化传媒有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=a1662cf1-4270-47d3-9448-4c9d3b4c7508","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-cf978499f0","name":"2027中国国际农化装备及植保器械展览会","start":"2027-03-24","end":"2027-03-26","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"医疗健康","topics":["医疗健康"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"北京时代化工展览服务公司","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=d87f77d8-743f-47a3-853f-aff59cf77a58","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-a4de91f88c","name":"2027中国国际肥料展览会","start":"2027-03-24","end":"2027-03-26","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"北京时代化工展览服务公司","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=dbf3f15e-1466-403a-a4d2-1d189f8f1816","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-a23d50baea","name":"2027国际现代农业科技展览会","start":"2027-03-24","end":"2027-03-26","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"科技互联网","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"北京时代化工展览服务公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=5139da77-85d1-44c5-bfa1-e802b3d19522","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-9f6262d423","name":"2027慕尼黑电子生产设备中国展","start":"2027-03-24","end":"2027-03-26","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":[],"featured":true,"featured_tag":"国际顶级","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"慕尼黑展览（上海）有限公司","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=55301bd7-b05e-45a2-a987-d4328db6c490","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-b02649bb44","name":"2027中国国际染料工业及有机颜料、纺织化学品展览会","start":"2027-04-14","end":"2027-04-16","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"工业制造","topics":["时尚纺织"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海市国际展览（集团）有限公司 中国染料工业协会,中国印染行业协会","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=adca11ef-33cd-41d3-9ba7-59f42654fb89","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-fac8e13953","name":"2027慕尼黑电子中国展","start":"2027-04-14","end":"2027-04-16","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":[],"featured":true,"featured_tag":"国际顶级","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"慕尼黑展览（上海）有限公司","official_type":"部级展会","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=440bbd9a-2801-4d13-a7aa-9751649e927e","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-067ab7ce51","name":"2027上海国际氢能技术及绿色燃料产业展览会","start":"2027-04-20","end":"2027-04-22","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":["新能源"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"中贸慕尼黑展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=0fd44245-7d9f-4d61-9bb3-ec2803ca4cc6","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-8aac699b32","name":"2027上海国际碳捕集、利用与封存技术展览会","start":"2027-04-20","end":"2027-04-22","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"中贸慕尼黑展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=e301020a-979e-4cc8-a0ad-ca77602cc4c2","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-0169475129","name":"2027上海国际资源再生与回收利用展览会","start":"2027-04-20","end":"2027-04-22","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"中贸慕尼黑展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=1bfa98c4-e933-47fa-b34a-cf8c93e4fab5","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-afb037cfb7","name":"第28届上海国际环博会","start":"2027-04-20","end":"2027-04-22","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"中贸慕尼黑展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=eee85bed-9493-4044-be35-168bb70a4f66","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-34650a8334","name":"2027上海国际表面活性剂和洗涤剂展览会","start":"2027-04-27","end":"2027-04-29","venue":"上海跨国采购会展中心","venue_short":"跨国采购","district":"普陀区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海怡涵展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=7e76d372-5b28-4ddb-bd1a-58f870668c6e","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-11c50b7670","name":"第13届上海国际数据中心及智算中心供配电展览会","start":"2027-06-03","end":"2027-06-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"电子信息","topics":["算力"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"隆高展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=7046e3f8-3deb-42fa-a05b-a54f5b9e092d","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-11771cd697","name":"第16届上海国际长时储能及液流电池展览会","start":"2027-06-03","end":"2027-06-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":["新能源"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"隆高展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=8e900e71-1f00-4980-8310-d4c4084cc6c1","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-93e45b487b","name":"第26届上海国际动力设备及发电机组展览会","start":"2027-06-03","end":"2027-06-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"隆高展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=3340709d-3be9-4126-abf9-6a52b7bcf6a7","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-394af6af5b","name":"第27届上海国际新型电力装备及变压器展览会","start":"2027-06-03","end":"2027-06-05","venue":"上海新国际博览中心","venue_short":"新国际","district":"浦东新区","category":"能源环保","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"隆高展览（上海）有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=932c3c1b-2b88-4f4a-8def-47af67b485fb","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-697bba1440","name":"2027上海国际涂布与模切展览会","start":"2027-06-22","end":"2027-06-24","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海富亚展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=77cbdc5b-850b-40f6-8f2c-77d830d90faf","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-dd477cb6ef","name":"2027上海国际胶带与薄膜展览会","start":"2027-06-22","end":"2027-06-24","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"综合其他","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海富亚展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=2b0ba428-042d-4b54-a7f0-87ba4be1d125","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-8e2b802908","name":"2027上海国际薄膜工业展览会","start":"2027-06-22","end":"2027-06-24","venue":"国家会展中心（上海）","venue_short":"国展中心","district":"青浦区","category":"工业制造","topics":[],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海富亚展览有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=dcf6b3c3-8037-460d-a6b9-c92ecf651620","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-a9ffee2155","name":"2027上海国际养老产业及康复展览会","start":"2027-06-23","end":"2027-06-25","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"医疗健康","topics":["医疗健康"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海聚亿展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=3d88df1c-48e9-401c-9b5b-4e998d6c8716","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-25b084fc84","name":"2027上海国际医疗器械展览会","start":"2027-06-23","end":"2027-06-25","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"医疗健康","topics":["医疗健康"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海聚亿展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=f5acf496-c853-46bc-a77b-dba349a815e8","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-3f5eb09038","name":"2027上海国际医疗用品及敷料耗材展览会","start":"2027-06-23","end":"2027-06-25","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"医疗健康","topics":["医疗健康"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海聚亿展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=886e8fda-1f7c-4e65-b882-a5e6723f1ca2","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-797c711e17","name":"2027上海国际家庭医疗健康用品展览会","start":"2027-06-23","end":"2027-06-25","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"医疗健康","topics":["医疗健康"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海聚亿展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=55b05ddc-654c-40b8-a501-ee548391607f","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-2c3640ea51","name":"2027上海国际检验医学及体外诊断试剂展览会","start":"2027-06-23","end":"2027-06-25","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"医疗健康","topics":["医疗健康"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海聚亿展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=939fb2ff-d01e-4f7c-826b-8924cfadf30f","kind":"展览排期","source":"GOV","status":"upcoming"},{"id":"GOV-4f5491cac6","name":"2027上海国际脑机接口技术展览会","start":"2027-06-23","end":"2027-06-25","venue":"上海世博展览馆","venue_short":"世博展览馆","district":"浦东新区","category":"综合其他","topics":["AI"],"featured":false,"featured_tag":"","admit":{"level":"public","kind":"预登记免费","summary":"免费，提前实名预登记最省事；现场凭身份证原件入场。","how":"专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场","where":"展会官网或官方微信公众号（用展会全名搜索）","steps":"","deadline":"","fee":"","verified":false,"channels":[{"name":"观众预登记","who":"行业观众 / 一般观众","where":"展会官网或官方微信公众号（用展会全名搜索）","window":"开展前 1–2 个月开放，开展前 1–3 天截止","steps":"","note":"预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进","deadline":"","state":""}]},"halls":"","organizer":"上海聚亿展览服务有限公司","official_type":"涉外经济技术展","website":"https://expo.sww.sh.gov.cn/browser/search-entp-expo.jspx?code=e14943c2-a3f2-4190-8b2b-0817a00dfe32","kind":"展览排期","source":"GOV","status":"upcoming"}],"version":"934d82ccdaae"};
+let EVENTS = DATA.events || [];
+const MIN_COUNT = 30;
+// 分发端点：GitHub Pages 优先，jsDelivr / raw 兜底；manifest 还能下发新端点覆盖这里。
+const REMOTE_ENDPOINTS = [
+  "https://serra006.github.io/sh-expo/public",
+  "https://cdn.jsdelivr.net/gh/serra006/sh-expo@main/public",
+  "https://raw.githubusercontent.com/serra006/sh-expo/main/public"
+];
+const WEEK = ["周日","周一","周二","周三","周四","周五","周六"];
+const SRC = {GOV:"市商务委会展平台", NECC:"国家会展中心官网", SNIEC:"新国际博览中心官网"};
+const TOPIC_ORDER = ["全部","重磅","进行中","一周内","AI","机器人","算力","半导体","新能源",
+  "汽车","低空经济","医疗健康","宠物","动漫游戏","食品饮料","家居建材","时尚纺织","文创艺术","出海跨境"];
+const FIXED = ["全部","重磅","进行中","一周内"];
+const AI_SET = ["AI","机器人","算力"];
+const isAI = e => (e.topics || []).some(t => AI_SET.includes(t));
+function hasT(t){ return EVENTS.some(e => (e.topics || []).includes(t)); }
+let TOPICS = TOPIC_ORDER.slice();
+let VENUES = [];
+
+const today = new Date(); today.setHours(0,0,0,0);
+const YMD = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+const pd = s => { const p = s.split("-").map(Number); return new Date(p[0], p[1]-1, p[2]); };
+const days = s => Math.round((pd(s) - today) / 86400000);
+const byId = id => EVENTS.find(e => e.id === id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- 原生桥（浏览器里打开时优雅降级） ---------- */
+const NA = (window.SHExpo && window.SHExpo.isApp) ? window.SHExpo : null;
+const IS_APP = !!NA;
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("show"), 1900);
+}
+
+/* ---------- 关注 ---------- */
+let fav = new Set();
+try { fav = new Set(JSON.parse(localStorage.getItem("fav") || "[]")); } catch(e) {}
+function saveFav(){
+  try { localStorage.setItem("fav", JSON.stringify([...fav])); } catch(e) {}
+}
+
+/* ---------- 提醒 ---------- */
+let rems = {};   // id -> 触发时间戳
+function loadRems(){
+  rems = {};
+  if (IS_APP && NA.listReminders) {
+    try {
+      const arr = JSON.parse(NA.listReminders() || "[]");
+      arr.forEach(r => { rems[r.id] = r.t; });
+    } catch(e) {}
+  } else {
+    try { rems = JSON.parse(localStorage.getItem("rems") || "{}"); } catch(e) {}
+  }
+}
+loadRems();
+
+/* ---------- 状态 ---------- */
+let tab = "timeline", curTopic = "全部", curVenue = "全部场馆", q = "";
+let calY = today.getFullYear(), calM = today.getMonth(), calDay = null;
+
+/* ---------- 顶部统计（在线更新后要重算） ---------- */
+function updateMeta(){
+  const featCount = EVENTS.filter(e => e.featured).length;
+  const aiCount = EVENTS.filter(isAI).length;
+  const stamp = esc((DATA.updated || "").slice(0, 10));
+  document.getElementById("hmeta").innerHTML =
+    EVENTS.length + " 场待开展<br>" + featCount + " 场重磅 · " + aiCount + " 场 AI"
+    + '<span class="sync">' + (stamp ? "数据 " + stamp + " · " : "") + "点击刷新</span>";
+}
+
+/* ---------- chips ---------- */
+function buildChips(){
+  document.getElementById("chipsTopic").innerHTML = TOPICS.map(t => {
+    const on = t === curTopic;
+    const warn = on && (t === "重磅" || t === "AI");
+    return `<div class="chip${on?" on":""}${warn?" warn":""}" data-t="${t}">${t}</div>`;
+  }).join("");
+  document.getElementById("chipsVenue").innerHTML = ["全部场馆"].concat(VENUES).map(v => {
+    const on = v === curVenue;
+    return `<div class="chip${on?" on":""}" data-v="${v}">${v}</div>`;
+  }).join("");
+}
+document.getElementById("chipsTopic").onclick = e => {
+  const el = e.target.closest(".chip"); if (!el) return;
+  curTopic = el.dataset.t; buildChips(); render();
+  el.scrollIntoView({inline:"center", block:"nearest", behavior:"smooth"});
+};
+document.getElementById("chipsVenue").onclick = e => {
+  const el = e.target.closest(".chip"); if (!el) return;
+  curVenue = el.dataset.v; buildChips(); render();
+  el.scrollIntoView({inline:"center", block:"nearest", behavior:"smooth"});
+};
+
+/* ---------- 搜索 ---------- */
+const qi = document.getElementById("q");
+const sbox = document.getElementById("searchBox");
+qi.addEventListener("focus", () => sbox.classList.add("focus"));
+qi.addEventListener("blur", () => sbox.classList.remove("focus"));
+qi.addEventListener("input", () => {
+  q = qi.value.trim();
+  sbox.classList.toggle("hasq", q.length > 0);
+  render();
+});
+document.getElementById("clr").onclick = () => {
+  qi.value = ""; q = ""; sbox.classList.remove("hasq"); qi.blur(); render();
+};
+
+function match(e, s){
+  const hay = [e.name, e.venue_short, e.venue, e.organizer, e.halls,
+               e.category, (e.topics||[]).join(" ")].join(" ").toLowerCase();
+  return s.toLowerCase().split(/\s+/).every(w => hay.includes(w));
+}
+
+function filter(list){
+  let r = list;
+  if (curTopic === "重磅") r = r.filter(e => e.featured);
+  else if (curTopic === "进行中") r = r.filter(e => e.status === "ongoing");
+  else if (curTopic === "一周内") r = r.filter(e => days(e.start) >= 0 && days(e.start) <= 7);
+  else if (curTopic === "AI") r = r.filter(isAI);
+  else if (curTopic !== "全部") r = r.filter(e => (e.topics || []).includes(curTopic));
+  if (curVenue !== "全部场馆") r = r.filter(e => e.venue_short === curVenue);
+  if (q) r = r.filter(e => match(e, q));
+  return r.sort((a,b) => a.start.localeCompare(b.start) || a.name.localeCompare(b.name));
+}
+
+/* ---------- 卡片 ---------- */
+function cardHTML(e){
+  const d = pd(e.start);
+  const ai = isAI(e);
+  const star = fav.has(e.id);
+  const hasRem = !!rems[e.id];
+  return `<div class="card${e.status==="ongoing"?" live":""}${e.featured?" feat":""}${hasRem?" hasrem":""}" data-id="${esc(e.id)}">
+    <div class="datebox"><div class="m">${d.getMonth()+1}月</div><div class="n">${d.getDate()}</div></div>
+    <div class="cardbody">
+      <div class="name">${e.featured?'<i class="fbar"></i>':""}${esc(e.name)}</div>
+      <div class="meta">
+        <span><b>${esc(e.venue_short)}</b>${e.district ? " · " + esc(e.district) : ""}</span>
+        ${e.end !== e.start ? `<span>至 ${e.end.slice(5).replace("-","/")}</span>` : ""}
+        ${e.featured ? `<span class="tag feat">${esc(e.featured_tag || "重磅")}</span>` : ""}
+        ${e.admit && e.admit.level === "trade" ? '<span class="tag trade">限专业</span>' : ""}
+        ${admitClosed(e) ? '<span class="tag dead" style="margin-left:0">报名已截止</span>' : ""}
+        ${ai ? '<span class="tag topic">AI</span>' : ""}
+        ${!e.featured ? `<span class="tag">${esc(e.category)}</span>` : ""}
+        ${e.status==="ongoing" ? '<span class="tag live">进行中</span>' : ""}
+        ${star ? '<span class="tag fav">已关注</span>' : ""}
+      </div>
+    </div>
+    <svg class="bell" viewBox="0 0 16 16" fill="none">
+      <path d="M8 2a3.6 3.6 0 0 1 3.6 3.6c0 3 1.1 4 1.4 4.4H3c.3-.4 1.4-1.4 1.4-4.4A3.6 3.6 0 0 1 8 2z"
+            stroke="currentColor" stroke-width="1.3"/>
+      <path d="M6.6 12.2a1.5 1.5 0 0 0 2.8 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+  </div>`;
+}
+
+function relTag(e){
+  if (e.status === "ongoing") return {txt:"进行中", cls:""};
+  const n = days(e.start);
+  if (n === 0) return {txt:"今天", cls:"warn"};
+  if (n === 1) return {txt:"明天", cls:"warn"};
+  if (n > 1) return {txt:n + " 天后", cls:"gray"};
+  return null;
+}
+
+function listHTML(list, withGroups){
+  if (!list.length) {
+    return q
+      ? `<div class="empty"><b>没找到相关展会</b>换个关键词试试，比如「机器人」「浦东」「食品」</div>`
+      : `<div class="empty"><b>暂无符合条件的展会</b>调整一下上面的筛选</div>`;
+  }
+  let html = "", last = "";
+  for (const e of list) {
+    if (withGroups && e.start !== last) {
+      last = e.start;
+      const d = pd(e.start), r = relTag(e);
+      html += `<div class="daygroup"><span class="d">${d.getMonth()+1}月${d.getDate()}日</span>`
+            + `<span class="w">${WEEK[d.getDay()]}</span>`
+            + (r ? `<span class="rel ${r.cls}">${r.txt}</span>` : "") + `</div>`;
+    }
+    html += cardHTML(e);
+  }
+  return html;
+}
+
+/* ---------- 时间轴 ---------- */
+function renderTimeline(){
+  const list = filter(EVENTS);
+  return `<div style="height:2px"></div>` + listHTML(list, true)
+    + `<div class="foot">数据更新于 ${esc((DATA.updated||"").slice(0,10))} · `
+    + `共 ${EVENTS.length} 场<br>来源：国家会展中心 · 新国际博览中心 · 市商务委</div>`
+    + `<div class="pad"></div>`;
+}
+
+/* ---------- 月历 ---------- */
+function renderCalendar(){
+  const first = new Date(calY, calM, 1);
+  const startPad = first.getDay();
+  const dim = new Date(calY, calM + 1, 0).getDate();
+  const prevDim = new Date(calY, calM, 0).getDate();
+
+  const map = {};
+  for (const e of EVENTS) {
+    let d = pd(e.start), end = pd(e.end);
+    if (end < d) end = d;
+    const cur = new Date(d);
+    let guard = 0;
+    while (cur <= end && guard++ < 60) {
+      const k = YMD(cur);
+      (map[k] = map[k] || []).push(e);
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+
+  const todayStr = YMD(today);
+  let cells = "";
+  for (let i = 0; i < startPad; i++) {
+    cells += `<div class="cell out"><div class="dn">${prevDim - startPad + 1 + i}</div></div>`;
+  }
+  for (let d = 1; d <= dim; d++) {
+    const key = calY + "-" + String(calM+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+    const evs = map[key] || [];
+    const uniq = [...new Set(evs.map(x => x.id))].length;
+    const hasFeat = evs.some(x => x.featured);
+    const dots = evs.length
+      ? `<div class="dots">${(hasFeat ? '<i class="a"></i>' : '<i></i>')}${uniq > 1 ? "<i></i>" : ""}${uniq > 2 ? "<i></i>" : ""}</div>`
+      : `<div class="dots"></div>`;
+    cells += `<div class="cell${key===todayStr?" today":""}${key===calDay?" sel":""}" data-d="${key}">
+      <div class="dn">${d}</div>${dots}${uniq > 2 ? `<span class="cnt">${uniq}</span>` : ""}</div>`;
+  }
+  const tail = (7 - ((startPad + dim) % 7)) % 7;
+  for (let i = 1; i <= tail; i++) cells += `<div class="cell out"><div class="dn">${i}</div></div>`;
+
+  let head = `<div class="calbar">
+    <div class="nav" data-step="-1">‹</div>
+    <div class="ym">${calY} 年 ${calM+1} 月</div>
+    <div class="nav" data-step="1">›</div>
+    <div class="today-btn" id="calToday">回到本月</div>
+  </div>
+  <div class="grid">${["日","一","二","三","四","五","六"].map(w => `<div class="wk">${w}</div>`).join("")}</div>
+  <div class="grid" id="calGrid">${cells}</div>`;
+
+  let body = "";
+  if (calDay) {
+    const list = (map[calDay] || []);
+    const seen = new Set(), uniq = [];
+    for (const e of list) if (!seen.has(e.id)) { seen.add(e.id); uniq.push(e); }
+    uniq.sort((a,b) => a.start.localeCompare(b.start));
+    const dd = pd(calDay);
+    body = `<div class="daygroup" style="position:static">
+        <span class="d">${dd.getMonth()+1}月${dd.getDate()}日</span>
+        <span class="w">${WEEK[dd.getDay()]}</span>
+        <span class="rel gray">${uniq.length} 场</span></div>`
+      + (uniq.length ? uniq.map(cardHTML).join("")
+         : `<div class="empty" style="padding:34px 0">这天没有展会</div>`);
+  } else {
+    body = `<div class="empty" style="padding:34px 20px 20px">点日历上的日期，看当天有哪些展</div>`;
+  }
+  return head + body + `<div class="pad"></div>`;
+}
+
+/* ---------- 关注 ---------- */
+function renderFav(){
+  const star = filter(EVENTS.filter(e => fav.has(e.id)));
+  const remList = EVENTS.filter(e => rems[e.id])
+    .sort((a,b) => (rems[a.id]||0) - (rems[b.id]||0));
+  let html = `<div style="height:6px"></div>`;
+  if (!star.length && !remList.length) {
+    return `<div class="empty"><b>还没有关注的展会</b>在展会详情里点「关注」，<br>开票或临近时就能在这里找到</div>`;
+  }
+  if (remList.length) {
+    html += `<div class="daygroup" style="position:static"><span class="d">已设提醒</span>
+      <span class="rel">${remList.length} 场</span></div>`;
+    html += remList.map(e => {
+      const t = rems[e.id];
+      const d = new Date(t);
+      const line = `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")} 提醒`;
+      const c = cardHTML(e);
+      return c.replace('<div class="meta">', `<div class="meta"><span class="tag live">${line}</span>`);
+    }).join("");
+  }
+  if (star.length) {
+    html += `<div class="daygroup" style="position:static"><span class="d">我关注的</span>
+      <span class="rel gray">${star.length} 场</span></div>`;
+    html += star.map(cardHTML).join("");
+  }
+  return html + `<div class="pad"></div>`;
+}
+
+/* ---------- 主渲染 ---------- */
+function isSearching(){ return q.length > 0; }
+
+function render(){
+  const main = document.getElementById("main");
+  document.getElementById("chipsTopic").style.display = (tab === "timeline" && !isSearching()) ? "flex" : "none";
+  document.getElementById("chipsVenue").style.display = (tab === "timeline" && !isSearching()) ? "flex" : "none";
+  if (isSearching() && tab !== "timeline") {
+    const list = filter(EVENTS);
+    main.innerHTML = `<div class="daygroup" style="position:static">
+        <span class="d">搜索「${esc(q)}」</span><span class="rel gray">${list.length} 场</span></div>`
+      + listHTML(list, false) + `<div class="pad"></div>`;
+    return;
+  }
+  main.innerHTML = tab === "calendar" ? renderCalendar()
+                 : tab === "fav" ? renderFav()
+                 : renderTimeline();
+  main.scrollTop = 0;
+}
+
+/* ---------- 交互 ---------- */
+document.querySelector(".tabbar").onclick = e => {
+  const el = e.target.closest(".tab"); if (!el) return;
+  if (tab === el.dataset.tab) { document.getElementById("main").scrollTop = 0; return; }
+  tab = el.dataset.tab;
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === tab));
+  render();
+  updateBadge();
+};
+
+document.getElementById("main").onclick = e => {
+  const nav = e.target.closest(".nav");
+  if (nav) {
+    let m = calM + Number(nav.dataset.step), y = calY;
+    if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
+    calY = y; calM = m; calDay = null; render(); return;
+  }
+  if (e.target.id === "calToday") {
+    calY = today.getFullYear(); calM = today.getMonth();
+    calDay = YMD(today); render(); return;
+  }
+  const cell = e.target.closest(".cell[data-d]");
+  if (cell) {
+    calDay = (calDay === cell.dataset.d) ? null : cell.dataset.d;
+    render(); return;
+  }
+  const card = e.target.closest(".card");
+  if (card) openDetail(card.dataset.id);
+};
+
+document.getElementById("main").addEventListener("scroll", e => {
+  document.getElementById("hdr").classList.toggle("stuck", e.target.scrollTop > 4);
+}, {passive:true});
+
+/* ---------- 参加办法 ---------- */
+// 所有报名通道都关闭了吗（卡片上给出"报名已截止"，避免白跑一趟）
+function admitClosed(e){
+  const a = e && e.admit;
+  if (!a) return false;
+  const chans = a.channels || [];
+  if (!chans.length) return a.state === "closed";
+  return chans.every(c => c.state === "closed" || c.state === "full");
+}
+
+// 通道状态：优先用数据里的明确标记，其次按截止日期推算，都没有就标"以公告为准"
+function chanState(c){
+  if (c.state === "closed") return { t: "已结束", c: "dead" };
+  if (c.state === "full")   return { t: "已约满", c: "dead" };
+  if (c.state === "open")   return { t: "开放中", c: "ok" };
+  if (c.state === "soon")   return { t: "未开始", c: "soon" };
+  if (c.deadline) {
+    const left = Math.round((pd(c.deadline) - today) / 86400000);
+    if (left < 0)  return { t: "已结束", c: "dead" };
+    if (left === 0) return { t: "今天截止", c: "soon" };
+    return { t: "还剩 " + left + " 天", c: "ok" };
+  }
+  return c.window ? { t: "以公告为准", c: "soon" } : null;
+}
+
+function copyName(s){
+  const m = (s || "").match(/「(.+?)」/);
+  return m ? m[1] : (s || "");
+}
+
+function admitRows(e){
+  const a = e.admit;
+  if (!a) return "";
+  const trade = a.level === "trade";
+  const chans = a.channels || [];
+  let h = `<div class="row"><div class="k">参加</div><div class="v">`
+        + `<span class="tag ${trade ? "trade" : "open"}">${esc(a.kind)}</span>`
+        + (a.summary ? `<div class="summary">${esc(a.summary)}</div>`
+                     : `<span style="display:inline-block;margin-top:6px">${esc(a.how)}</span>`)
+        + `</div></div>`;
+
+  if (chans.length) {
+    const rows = chans.map(c => {
+      const st = chanState(c);
+      const cp = copyName(c.where);
+      const off = st && st.c === "dead";
+      return `<div class="chan${off ? " off" : ""}">`
+        + `<div class="ch">${esc(c.name)}${st ? `<span class="tag ${st.c}">${st.t}</span>` : ""}</div>`
+        + (c.who ? `<div class="line">适用：<b>${esc(c.who)}</b></div>` : "")
+        + (c.window ? `<div class="line">开放时间：${esc(c.window)}</div>` : "")
+        + (c.where ? `<div class="line">渠道：${esc(c.where)}</div>` : "")
+        + (c.steps ? `<div class="line">路径：${esc(c.steps)}</div>` : "")
+        + (c.note ? `<div class="line hint">${esc(c.note)}</div>` : "")
+        + (cp && /小程序|公众号|微信/.test(c.where)
+            ? `<button class="mini" data-copy="${esc(cp)}">复制「${esc(cp.length > 12 ? cp.slice(0, 11) + "…" : cp)}」</button>`
+            : "")
+        + `</div>`;
+    }).join("");
+    h += `<div class="row"><div class="k">通道</div><div class="v">${rows}`
+       + `<div class="hint" style="margin-top:6px">复制名称后到微信顶部搜索框粘贴，即可找到该小程序/公众号</div>`
+       + `</div></div>`;
+  } else if (a.deadline) {
+    const left = Math.round((pd(a.deadline) - today) / 86400000);
+    const txt = left < 0 ? "已截止" : left === 0 ? "今天最后一天" : "还剩 " + left + " 天";
+    h += `<div class="row"><div class="k">截止</div><div class="v">${a.deadline}`
+       + `<span class="tag ${left < 0 ? "dead" : "ok"}">${txt}</span>`
+       + (left < 0 ? `<br><span class="hint">报名已关闭，现场不受理</span>` : "")
+       + `</div></div>`;
+  }
+
+  if (a.fee) h += `<div class="row"><div class="k">费用</div><div class="v">${esc(a.fee)}</div></div>`;
+
+  h += `<div class="row"><div class="k">依据</div><div class="v hint">`
+     + (a.verified ? "主办方官方公告" : "按同类展会通行做法推断，出发前请再核一次主办方公告")
+     + `</div></div>`;
+  return h;
+}
+
+function copyToClipboard(t){
+  if (IS_APP && NA.copy) {
+    try { NA.copy(t); toast("已复制「" + t + "」"); return; } catch(e) {}
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(
+      () => toast("已复制「" + t + "」"),
+      () => toast("复制失败，请手动长按选择"));
+  } else {
+    toast("请手动长按选择文字");
+  }
+}
+
+/* ---------- 详情 ---------- */
+function fmtMs(ms){
+  const d = new Date(ms);
+  return `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+function openDetail(id){
+  const e = byId(id); if (!e) return;
+  const d1 = pd(e.start), d2 = pd(e.end);
+  const dur = Math.round((d2 - d1) / 86400000) + 1;
+  const halls = e.halls ? e.halls.split("、").filter(Boolean) : [];
+  const starred = fav.has(e.id);
+  const rem = rems[e.id];
+  const n = days(e.start);
+  const when = e.status === "ongoing" ? "正在进行" : n === 0 ? "今天开始" : n === 1 ? "明天开始" : n + " 天后开始";
+
+  document.getElementById("panel").innerHTML = `
+    <div class="grab"></div>
+    <h2>${esc(e.name)}</h2>
+    <div class="subline">
+      ${e.featured ? `<span class="tag feat">${esc(e.featured_tag || "重磅")}</span>` : ""}
+      ${isAI(e) ? '<span class="tag topic">AI 相关</span>' : ""}
+      <span class="tag">${esc(e.category)}</span>
+      ${e.status === "ongoing" ? '<span class="tag live">进行中</span>' : ""}
+    </div>
+    <div class="row"><div class="k">时间</div><div class="v">
+      ${e.start}${e.end !== e.start ? " 至 " + e.end : ""}<br>共 ${dur} 天 · ${when}</div></div>
+    <div class="row"><div class="k">场馆</div><div class="v">${esc(e.venue)}${e.district ? "（" + esc(e.district) + "）" : ""}
+      ${halls.length ? "<br>" + halls.length + " 个展馆：" + esc(halls.join("、")) : ""}</div></div>
+    ${admitRows(e)}
+    ${(e.topics||[]).length ? `<div class="row"><div class="k">主题</div><div class="v">
+      ${e.topics.map(t => `<span class="tag topic" style="display:inline-block;margin:0 5px 4px 0">${esc(t)}</span>`).join("")}</div></div>` : ""}
+    ${e.organizer ? `<div class="row"><div class="k">主办</div><div class="v">${esc(e.organizer)}</div></div>` : ""}
+    ${e.website ? `<div class="row"><div class="k">链接</div><div class="v">
+      <a href="#" data-url="${esc(e.website)}">${e.website.indexOf("sww.sh.gov.cn") >= 0 ? "市商务委备案详情页 ›" : esc(e.website)}</a></div></div>` : ""}
+    <div class="row"><div class="k">来源</div><div class="v">
+      ${e.source.split("+").map(s => SRC[s] || s).join(" · ")}</div></div>
+    <div class="row"><div class="k">提醒</div><div class="v" id="remLine">
+      ${rem ? "已设置：" + fmtMs(rem) : "未设置"}</div></div>
+    <div class="actions">
+      <button class="btn ${starred?"on":""}" id="btnFav">${starred ? "已关注" : "关注"}</button>
+      <button class="btn ${rem?"on":""}" id="btnRem">${rem ? "取消提醒" : "加提醒"}</button>
+    </div>
+    <div class="actions2">
+      <button class="btn primary" id="btnCal">加入系统日历</button>
+      ${e.website ? '<button class="btn" id="btnOpen">打开链接</button>' : ""}
+    </div>`;
+
+  const sheet = document.getElementById("sheet");
+  sheet.classList.add("show");
+
+  document.getElementById("btnFav").onclick = () => {
+    if (fav.has(e.id)) { fav.delete(e.id); toast("已取消关注"); }
+    else { fav.add(e.id); toast("已关注，可在「关注」里找到"); }
+    saveFav(); openDetail(id); render(); updateBadge();
+  };
+
+  document.getElementById("btnRem").onclick = () => {
+    if (rems[e.id]) { cancelReminder(e.id); openDetail(id); render(); return; }
+    addReminder(e);
+  };
+
+  document.getElementById("btnCal").onclick = () => addCalendar(e);
+
+  const bo = document.getElementById("btnOpen");
+  if (bo) bo.onclick = () => {
+    if (IS_APP && NA.openUrl) NA.openUrl(e.website);
+    else window.open(e.website, "_blank");
+  };
+
+  document.querySelectorAll("#panel a[data-url]").forEach(a => {
+    a.onclick = ev => {
+      ev.preventDefault();
+      const u = a.dataset.url;
+      if (IS_APP && NA.openUrl) NA.openUrl(u); else window.open(u, "_blank");
+    };
+  });
+
+  document.querySelectorAll("#panel [data-copy]").forEach(b => {
+    b.onclick = ev => { ev.stopPropagation(); copyToClipboard(b.dataset.copy); };
+  });
+}
+
+document.getElementById("sheet").onclick = e => {
+  if (e.target.id === "sheet") document.getElementById("sheet").classList.remove("show");
+};
+
+/* ---------- 提醒逻辑 ---------- */
+function addReminder(e){
+  const s = pd(e.start), en = pd(e.end);
+  const at = (d, h, m) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, 0, 0).getTime();
+  const prevDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+  // 按优先级挑第一个还没过去的时间点：开展前 → 开展当天 → 闭展前 → 闭展当天
+  const cands = [
+    [at(prevDay(s), 20, 0), "开展前一天 20:00"],
+    [at(s, 8, 30),          "开展当天 08:30"],
+    [at(prevDay(en), 20, 0),"闭展前一天 20:00"],
+    [at(en, 8, 30),         "闭展当天 08:30"]
+  ];
+  const now = Date.now();
+  const pick = cands.find(c => c[0] > now);
+  if (!pick) { toast("这场展已经结束了"); return; }
+
+  const title = "展会提醒 · " + e.name;
+  const text = (e.end !== e.start ? e.start + " 至 " + e.end : e.start)
+             + " · " + e.venue_short + "，别忘了去看";
+
+  if (IS_APP && NA.setReminder) {
+    let ok = false;
+    try { ok = NA.setReminder(e.id, title, text, pick[0]) === "ok"; } catch(err) {}
+    if (!ok) { toast("提醒设置失败，请检查通知权限"); return; }
+    if (NA.requestNotifPermission) { try { NA.requestNotifPermission(); } catch(err) {} }
+  } else {
+    rems[e.id] = pick[0];
+    try { localStorage.setItem("rems", JSON.stringify(rems)); } catch(err) {}
+  }
+  loadRems();
+  toast("已设置 " + pick[1] + " 提醒");
+  openDetail(e.id); render(); updateBadge();
+}
+
+function cancelReminder(id){
+  if (IS_APP && NA.cancelReminder) { try { NA.cancelReminder(id); } catch(e) {} }
+  else {
+    delete rems[id];
+    try { localStorage.setItem("rems", JSON.stringify(rems)); } catch(e) {}
+  }
+  loadRems();
+  toast("已取消提醒");
+  updateBadge();
+}
+
+/* ---------- 系统日历 ---------- */
+function addCalendar(e){
+  const s = pd(e.start);
+  const sMs = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 9, 0).getTime();
+  const en = pd(e.end);
+  const eMs = new Date(en.getFullYear(), en.getMonth(), en.getDate(), 18, 0).getTime();
+  const loc = e.venue + (e.district ? "（" + e.district + "）" : "");
+  const desc = (e.organizer ? "主办：" + e.organizer + "\n" : "")
+             + (e.website ? e.website + "\n" : "") + "来自「上海展会」App";
+  if (IS_APP && NA.addCalendar) {
+    let r = "";
+    try { r = NA.addCalendar(e.name, loc, desc, sMs, eMs); } catch(err) { r = "fail"; }
+    toast(r === "ok" ? "已打开日历，确认后即写入" : "没找到可用的日历应用");
+  } else {
+    toast("请在 App 内使用此功能");
+  }
+}
+
+/* ---------- 返回键 ---------- */
+window.onAndroidBack = function(){
+  const sheet = document.getElementById("sheet");
+  if (sheet.classList.contains("show")) { sheet.classList.remove("show"); return true; }
+  if (q) { qi.value = ""; q = ""; sbox.classList.remove("hasq"); render(); return true; }
+  if (tab !== "timeline") {
+    tab = "timeline";
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === "timeline"));
+    render(); return true;
+  }
+  return false;
+};
+
+/* ---------- 角标 ---------- */
+function updateBadge(){
+  const n = EVENTS.filter(e => rems[e.id]).length + fav.size;
+  let b = document.getElementById("favBadge");
+  if (!n) { if (b) b.remove(); return; }
+  const tabEl = document.querySelector('.tab[data-tab="fav"]');
+  if (!b) { b = document.createElement("div"); b.id = "favBadge"; b.className = "badge"; tabEl.appendChild(b); }
+  b.textContent = n > 99 ? "99+" : n;
+}
+
+/* ---------- 在线更新 ----------
+ * 三层数据：APK 内置兜底 → 手机本地缓存 → 线上 latest.json。
+ * manifest 的 version 由内容 sha256 决定，内容没变就不下载大文件。
+ * 任何一步失败都静默沿用当前数据，不弹错误、不白屏。
+ * 网络走原生桥 SHExpo.fetch，避开 WebView 跨域的不确定性。 */
+let ENDPOINTS = REMOTE_ENDPOINTS.slice();
+let syncing = false, cbSeq = 0;
+
+function httpGet(url, done){
+  if (!IS_APP || !NA.fetch) { done(""); return; }
+  const cb = "__expoCb" + (++cbSeq);
+  let settled = false;
+  const timer = setTimeout(function(){
+    if (settled) return;
+    settled = true;
+    try { window[cb] = null; } catch(e) {}
+    done("");
+  }, 15000);
+  try {
+    window[cb] = function(txt){
+      if (settled) return;
+      settled = true; clearTimeout(timer);
+      try { window[cb] = null; } catch(e) {}
+      done(txt || "");
+    };
+    NA.fetch(url, cb);
+  } catch(e) {
+    if (!settled) { settled = true; clearTimeout(timer); done(""); }
+  }
+}
+
+function tryEndpoints(i, file, done){
+  if (i >= ENDPOINTS.length) { done("", ""); return; }
+  const url = ENDPOINTS[i] + "/" + file + "?_=" + Date.now();
+  httpGet(url, function(txt){
+    if (txt && txt.length > 2) done(txt, ENDPOINTS[i]);
+    else tryEndpoints(i + 1, file, done);
+  });
+}
+
+function validData(o){
+  return o && typeof o === "object" && Array.isArray(o.events)
+      && o.events.length >= MIN_COUNT
+      && o.events.every(e => e && e.id && e.name && e.start);
+}
+
+function showNewBar(n){
+  const el = document.getElementById("newbar");
+  if (!el) return;
+  el.innerHTML = '<span>' + (n > 0 ? "新增 " + n + " 场展会，已自动加入" : "展会数据已更新")
+               + '</span><span class="x">✕</span>';
+  el.classList.remove("hide");
+}
+document.getElementById("newbar").onclick = function(){
+  document.getElementById("newbar").classList.add("hide");
+};
+
+function rebuildDerived(){
+  TOPICS = TOPIC_ORDER.filter(t => FIXED.includes(t) || hasT(t));
+  VENUES = [...new Set(EVENTS.map(e => e.venue_short))];
+  if (!TOPICS.includes(curTopic)) curTopic = "全部";
+  if (!VENUES.includes(curVenue)) curVenue = "全部场馆";
+  updateMeta();
+  buildChips();
+}
+
+function applyRemote(o, base){
+  const oldIds = new Set(EVENTS.map(e => e.id));
+  DATA = o;
+  EVENTS = o.events;
+  const added = EVENTS.filter(e => !oldIds.has(e.id)).length;
+  if (base && ENDPOINTS[0] !== base) {
+    ENDPOINTS = [base].concat(ENDPOINTS.filter(x => x !== base));
+  }
+  rebuildDerived();
+  render();
+  updateBadge();
+  showNewBar(added);
+}
+
+function finishSync(silent, ok){
+  syncing = false;
+  if (!silent) toast(ok ? "已是最新数据" : "暂时无法连接，继续使用本地数据");
+}
+
+function sync(silent){
+  if (syncing) return;
+  if (!IS_APP || !NA.fetch) { if (!silent) toast("请在 App 内检查更新"); return; }
+  syncing = true;
+  if (!silent) toast("正在检查更新…");
+  tryEndpoints(0, "manifest.json", function(txt){
+    let mf = null;
+    try { mf = JSON.parse(txt); } catch(e) {}
+    if (!mf || !mf.version) { finishSync(silent, false); return; }
+    if (Array.isArray(mf.endpoints) && mf.endpoints.length) {
+      ENDPOINTS = [...new Set(mf.endpoints.concat(ENDPOINTS))];
+    }
+    if (mf.version === (DATA.version || "")) { finishSync(silent, true); return; }
+    tryEndpoints(0, "latest.json", function(raw, base){
+      let o = null;
+      try { o = JSON.parse(raw); } catch(e) {}
+      if (!validData(o) || o.version !== mf.version
+          || (mf.count && o.count !== mf.count)) {
+        finishSync(silent, false); return;
+      }
+      if (NA.saveCache) { try { NA.saveCache(raw); } catch(e) {} }
+      applyRemote(o, base);
+      finishSync(silent, true);
+    });
+  });
+}
+
+function bootSync(){
+  // 先读上一次成功下载的缓存，比 APK 内置数据新
+  if (IS_APP && NA.loadCache) {
+    let cached = "";
+    try { cached = NA.loadCache(); } catch(e) {}
+    if (cached) {
+      try {
+        const o = JSON.parse(cached);
+        if (validData(o)) { DATA = o; EVENTS = o.events; }
+      } catch(e) {}
+    }
+  }
+  rebuildDerived();
+  render();
+  updateBadge();
+  sync(true);
+}
+document.getElementById("hmeta").onclick = function(){ sync(false); };
+
+bootSync();
+</script>
+</body>
+</html>

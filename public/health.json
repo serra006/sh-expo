@@ -1,0 +1,16 @@
+{
+ "ok": true,
+ "checked_at": "2026-11-11 08:15:34",
+ "version": "934d82ccdaae",
+ "count": 105,
+ "new_count": 6,
+ "removed_count": 15,
+ "sources": {
+  "GOV": 66,
+  "SNIEC": 12,
+  "GOV+SNIEC": 20,
+  "NECC": 5,
+  "GOV+NECC": 2
+ },
+ "publish": "跳过（未配置 R2 环境变量）"
+}

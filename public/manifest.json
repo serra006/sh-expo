@@ -1,0 +1,14 @@
+{
+ "version": "934d82ccdaae",
+ "count": 105,
+ "new_count": 6,
+ "updated": "2026-11-11 08:15:15",
+ "generated_at": "2026-11-11 08:15:34",
+ "latest_bytes": 140125,
+ "latest_sha256": "ffab8efb2be6ded9cdc1661ddd2faeefee5caa5170a084168c9ef72780a64aa0",
+ "endpoints": [
+  "https://serra006.github.io/sh-expo/public",
+  "https://cdn.jsdelivr.net/gh/serra006/sh-expo@main/public",
+  "https://raw.githubusercontent.com/serra006/sh-expo/main/public"
+ ]
+}

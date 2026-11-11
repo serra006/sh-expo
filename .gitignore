@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+raw/
+data/snapshots/
+apk/build/
+apk/shots/
+apk/*.idsig
+apk/*.apk
+apk/classes.dex
+*.backup.json
