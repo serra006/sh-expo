@@ -1,10 +1,16 @@
 {
- "ok": false,
- "checked_at": "2026-11-11 10:41:31",
- "prev_version": "934d82ccdaae",
- "prev_count": 105,
- "attempt_count": 105,
- "problems": [
-  "数据时间过旧：8.0 小时前（上限 3.0 小时），疑似抓取失败"
- ]
+ "ok": true,
+ "checked_at": "2026-11-11 10:45:51",
+ "version": "934d82ccdaae",
+ "count": 105,
+ "new_count": 0,
+ "removed_count": 0,
+ "sources": {
+  "GOV": 66,
+  "SNIEC": 12,
+  "GOV+SNIEC": 20,
+  "NECC": 5,
+  "GOV+NECC": 2
+ },
+ "publish": "跳过（未配置 R2 环境变量）"
 }
