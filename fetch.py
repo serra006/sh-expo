@@ -11,7 +11,7 @@ import os
 import re
 import time
 import hashlib
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 
 import requests
 from bs4 import BeautifulSoup
@@ -27,6 +27,16 @@ RAW = os.path.join(BASE, "raw")
 DATA = os.path.join(BASE, "data")
 os.makedirs(RAW, exist_ok=True)
 os.makedirs(DATA, exist_ok=True)
+
+# GitHub Actions 容器是 UTC，本机是北京时间。所有日期判断必须统一用北京时间：
+# 否则 updated 时间戳会被 publish.py 误判为「8 小时前的旧数据」，
+# 且 cron 在 UTC 21:23 时 date.today() 还是北京的昨天，跨月会少抓一个月。
+CST = timezone(timedelta(hours=8))
+
+
+def today_cst():
+    return datetime.now(CST).date()
+
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -315,7 +325,7 @@ def parse_range(text):
 
 
 def status_of(start, end, today=None):
-    today = today or date.today().isoformat()
+    today = today or today_cst().isoformat()
     if not start:
         return "unknown"
     if end and end < today:
@@ -440,7 +450,7 @@ def month_list(start_ym, months):
 
 
 def fetch_sniec(months=15):
-    today = date.today()
+    today = today_cst()
     start_y, start_m = (today.year, today.month - 1)
     if start_m < 1:
         start_m = 12
@@ -563,7 +573,7 @@ def parse_gov(html):
 
 
 def fetch_gov(months=15):
-    today = date.today()
+    today = today_cst()
     y, m = today.year, today.month - 1
     if m < 1:
         y, m = y - 1, 12
@@ -691,7 +701,7 @@ def main():
     sniec = fetch_sniec()
     events = merge(gov, necc, sniec)
     payload = {
-        "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "updated": datetime.now(CST).strftime("%Y-%m-%d %H:%M:%S"),
         "city": "上海",
         "count": len(events),
         "events": events,
