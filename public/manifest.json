@@ -1,11 +1,11 @@
 {
- "version": "320bcb0df46f",
- "count": 105,
- "new_count": 0,
- "updated": "2026-11-13 06:47:36",
- "generated_at": "2026-11-13 09:35:28",
- "latest_bytes": 174071,
- "latest_sha256": "8f6332111799a621ecdf0b46b9a02e3b169ff96882a47f34c76a415618ecb928",
+ "version": "986f8b9489a8",
+ "count": 98,
+ "new_count": 4,
+ "updated": "2026-11-14 11:10:36",
+ "generated_at": "2026-11-14 11:10:36",
+ "latest_bytes": 162351,
+ "latest_sha256": "aaa91bfb6a771e644351fe6b3cc321a9bf765877f319b8c32dc5d13d86d90799",
  "endpoints": [
   "https://serra006.github.io/sh-expo/public",
   "https://cdn.jsdelivr.net/gh/serra006/sh-expo@main/public",
