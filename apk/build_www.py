@@ -753,6 +753,25 @@ function admitRows(e){
   return h;
 }
 
+/* 信息新鲜度：开发者大会靠人工清单维护，核实日期比「更新时间」更有意义。
+   展会那侧每天自动采集，字段天天是新的，不需要这行。 */
+function verifiedRow(e){
+  const v = e.verified_at;
+  if (!v) return "";
+  const age = -days(v);
+  if (!(age >= 0)) return "";
+  const md = v.slice(5, 7) + "-" + v.slice(8, 10);
+  const stale = age > 30;
+  let txt;
+  if (age === 0) txt = "核实于 " + md + "（今天）";
+  else if (stale) txt = "核实于 " + md + "，已 " + age + " 天未更新，时间与报名方式可能已变更";
+  else txt = "核实于 " + md + "，" + age + " 天前";
+  return `<div class="row"><div class="k">时效</div><div class="v">`
+    + `<span class="${stale ? "hint" : "hint"}"${stale ? ' style="color:#E0A458"' : ""}>${esc(txt)}</span>`
+    + (stale ? `<div class="hint" style="margin-top:4px">建议点上方入口前，先看主办方最新公告</div>` : "")
+    + `</div></div>`;
+}
+
 /* 参加入口：能点一下就去的按钮。
    优先用官网首页发现的预登记页（真入口），其次展会官网本身，最后票务搜索。
    商务委备案页没有报名入口，只作为备案信息弱化展示，不给按钮。 */
@@ -767,8 +786,9 @@ function entryRows(e){
   const dev = kindOf(e) === "dev";
   const sg = e.signup || null;
   const tick = e.tickets || [];
+  const dead = !!(sg && sg.link_status === "dead");
   const btns = [];
-  if (sg && sg.url) {
+  if (sg && sg.url && !dead) {
     btns.push(`<button class="btn primary" data-url="${esc(sg.url)}">${esc(sg.label || "在线预登记")}</button>`);
   }
   if (kind === "official" && e.website && !(sg && sg.url === e.website)) {
@@ -778,6 +798,14 @@ function entryRows(e){
     btns.push(`<button class="btn" data-url="${esc(t.url)}">${esc(t.name)}搜票</button>`);
   });
   if (!btns.length) {
+    /* 探测过、明确打不开的链接：不能给一个点了报错的按钮 */
+    if (dead) {
+      return `<div class="row"><div class="k">报名</div><div class="v">`
+        + `<span class="tag">${esc(sg.label || "报名页")} 已失效</span>`
+        + `<div class="hint" style="margin-top:6px">上次检测（${esc(sg.link_checked || "近期")}）该链接返回 404，`
+        + `可能报名已截止或改到公众号。建议搜主办方最新公告。</div>`
+        + `</div></div>`;
+    }
     /* 只有二维码的活动没有可点网址，也要明确告诉用户入口在哪，不能让页面看起来没入口 */
     if (sg && sg.qr_only) {
       return `<div class="row"><div class="k">报名</div><div class="v">`
@@ -852,6 +880,7 @@ function openDetail(id){
       <a href="#" data-url="${esc(e.website)}">市商务委备案信息（无报名入口）›</a></div></div>` : ""}
     <div class="row"><div class="k">来源</div><div class="v">
       ${e.source.split("+").map(s => SRC[s] || s).join(" · ")}</div></div>
+    ${verifiedRow(e)}
     <div class="row"><div class="k">提醒</div><div class="v" id="remLine">
       ${rem ? "已设置：" + fmtMs(rem) : "未设置"}</div></div>
     <div class="actions">

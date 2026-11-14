@@ -60,9 +60,11 @@ let api;
 try {
   const fn = new Function("document", "window", "localStorage", "console", code +
     "\n;return {render,openDetail,filter,isAI,days,addReminder,cancelReminder,admitClosed,chanState," +
-    "validData,applyRemote,rebuildDerived,sync,bootSync,REMOTE_ENDPOINTS," +
+    "validData,applyRemote,rebuildDerived,sync,bootSync,REMOTE_ENDPOINTS,newerThanLocal," +
     "getEVENTS:()=>EVENTS, getDATA:()=>DATA, getTOPICS:()=>TOPICS, getVENUES:()=>VENUES, getENDPOINTS:()=>ENDPOINTS," +
     "setTab:t=>{tab=t;render();}, getTab:()=>tab, setQ:v=>{q=v;render();}," +
+    "setKind:k=>{curKind=k;curTopic='全部';curVenue='全部场馆';rebuildDerived();render();}, getKind:()=>curKind," +
+    "kindOf:kindOf, getKINDS:()=>KINDS," +
     "getRems:()=>rems, favSet:()=>fav, setCal:()=>{calY=today.getFullYear();calM=today.getMonth();calDay=null;tab='calendar';render();}," +
     "pickDay:d=>{calDay=d;render();}};");
   api = fn(document, window, localStorage, console);
@@ -79,11 +81,72 @@ function check(name, cond, extra) {
   console.log((cond ? "PASS  " : "FAIL  ") + name + (extra ? "  [" + extra + "]" : ""));
 }
 
-// 1 时间轴
+// 1 时间轴（默认停在「展会」栏，开发者大会单独一栏）
+const expoOnly = api.getEVENTS().filter(e => api.kindOf(e) === "expo");
+const devOnly = api.getEVENTS().filter(e => api.kindOf(e) === "dev");
 let n = count(els.main.innerHTML, /class="card[ "]/g);
-check("时间轴渲染卡片", n === api.getEVENTS().length, n + "/" + api.getEVENTS().length);
+check("时间轴渲染卡片（展会栏）", n === expoOnly.length, n + "/" + expoOnly.length);
 check("时间轴有日期分组", count(els.main.innerHTML, /class="daygroup"/g) > 0);
 check("重磅高亮存在", els.main.innerHTML.includes('class="card feat') || els.main.innerHTML.includes("feat"));
+
+// 1b 类型切换：展会 / 开发者大会
+check("类型切换有两项", api.getKINDS().length === 2, api.getKINDS().map(k => k.label).join(" / "));
+check("类型切换栏已渲染", count(els.kindBar.innerHTML, /class="kb/g) === 2);
+check("开发者大会数据已并入", devOnly.length > 0, devOnly.length + " 场");
+api.setKind("dev");
+const devCards = count(els.main.innerHTML, /class="card[ "]/g);
+check("切到大会栏只显示大会", devCards === devOnly.length, devCards + "/" + devOnly.length);
+check("大会栏统计文案正确",
+  els.hmeta.innerHTML.includes(String(devOnly.length) + " 场活动待参加"));
+api.setKind("expo");
+check("切回展会栏恢复场次",
+  count(els.main.innerHTML, /class="card[ "]/g) === expoOnly.length);
+
+const devWithLink = devOnly.find(x => x.signup && x.signup.url);
+if (devWithLink) {
+  api.openDetail(devWithLink.id);
+  check("大会详情给报名按钮",
+    els.panel.innerHTML.includes('data-url="' + devWithLink.signup.url + '"')
+    && els.panel.innerHTML.includes(devWithLink.signup.label),
+    devWithLink.signup.label);
+  check("大会详情文案不是展会口径",
+    !els.panel.innerHTML.includes("打开展会官网") && !els.panel.innerHTML.includes("观众预登记"));
+} else {
+  check("大会详情给报名按钮", false, "没有带链接的大会");
+}
+
+// 1.7 信息时效：大会靠人工清单维护，详情页要能看出「这条信息是什么时候核实的」
+const devVerified = devOnly.find(x => x.verified_at);
+if (devVerified) {
+  api.openDetail(devVerified.id);
+  check("大会详情显示核实日期",
+    els.panel.innerHTML.includes("时效") && els.panel.innerHTML.includes("核实于"),
+    devVerified.verified_at);
+} else {
+  check("大会详情显示核实日期", false, "没有带核实日期的大会");
+}
+
+// 1.7 死链：探测到 404 的报名页不能再给一个点了报错的按钮
+const EV = api.getEVENTS();
+const deadSrc = devWithLink || devOnly[0];
+const deadUrl = (deadSrc.signup || {}).url || "";
+if (deadUrl) {
+  EV.push(Object.assign({}, deadSrc, {
+    id: "TEST-dead-link",
+    name: "死链测试活动",
+    signup: Object.assign({}, deadSrc.signup, {
+      link_status: "dead", link_checked: "2026-11-15",
+    }),
+  }));
+  api.openDetail("TEST-dead-link");
+  check("死链不再渲染报名按钮",
+    !els.panel.innerHTML.includes('data-url="' + deadUrl + '"'));
+  check("死链给出失效提示", els.panel.innerHTML.includes("已失效"));
+  EV.pop();
+} else {
+  check("死链不再渲染报名按钮", false, "没有带网址的大会");
+  check("死链给出失效提示", false, "没有带网址的大会");
+}
 
 // 2 搜索
 api.setQ("机器人");
@@ -191,6 +254,68 @@ check("普通专业展显示预登记免费", els.panel.innerHTML.includes("预�
 check("普通专业展标注为推断", els.panel.innerHTML.includes("通行做法"));
 check("普通专业展有预登记通道", els.panel.innerHTML.includes("观众预登记"));
 check("普通专业展未关闭", api.admitClosed(generic) === false);
+check("普通专业展显示具体公众号名",
+  els.panel.innerHTML.includes(generic.admit.channels[0].wechat.name),
+  generic.admit.channels[0].wechat.name);
+check("详情页有「公众号：」标签", /公众号：|小程序：/.test(els.panel.innerHTML));
+check("详情页不再出现公用词条", !els.panel.innerHTML.includes("用展会全名搜索"));
+check("有复制名称按钮",
+  els.panel.innerHTML.indexOf('data-copy="' + generic.admit.channels[0].wechat.name + '"') >= 0);
+
+const wxNames = new Set();
+api.getEVENTS().forEach(x => (x.admit.channels || []).forEach(c => {
+  if (c.wechat && c.wechat.name) wxNames.add(c.wechat.name);
+}));
+check("每场展会通道都带公众号名",
+  expoOnly.every(x => (x.admit.channels || []).every(c => c.wechat && c.wechat.name)),
+  expoOnly.filter(x => (x.admit.channels || []).some(c => !(c.wechat && c.wechat.name))).length + " 场缺名");
+check("公众号名不是同一句公用词",
+  !JSON.stringify(api.getEVENTS()).includes("用展会全名搜索"));
+check("公众号名覆盖不同展会",
+  wxNames.size >= api.getEVENTS().length * 0.9,
+  wxNames.size + " 个不同名称 / " + api.getEVENTS().length + " 场");
+
+// 11 参加入口（1.5 新增）
+const withSignup = api.getEVENTS().find(x => x.signup && x.signup.url);
+check("存在带预登记入口的展会", !!withSignup, withSignup ? withSignup.name : "无");
+if (withSignup) {
+  api.openDetail(withSignup.id);
+  check("详情页有「参加入口」", els.panel.innerHTML.includes("参加入口"));
+  const frag = withSignup.signup.url.slice(0, 40);
+  check("入口按钮指向预登记页", els.panel.innerHTML.indexOf(frag) >= 0, frag);
+  check("按钮文案取自官网标签", els.panel.innerHTML.includes(withSignup.signup.label),
+    withSignup.signup.label);
+  check("提示已找到预登记页", els.panel.innerHTML.includes("直接去登记"));
+}
+
+const filing = api.getEVENTS().find(x => x.website_kind === "filing" && x.website);
+check("存在商务委备案页展会", !!filing);
+api.openDetail(filing.id);
+check("备案页标注无报名入口", els.panel.innerHTML.includes("无报名入口"));
+check("备案页不给官网按钮", !els.panel.innerHTML.includes("打开展会官网"));
+
+const offOnly = api.getEVENTS().find(x => x.website_kind === "official" && x.website && !x.signup);
+if (offOnly) {
+  api.openDetail(offOnly.id);
+  check("官网未找到入口时给官网按钮", els.panel.innerHTML.includes("打开展会官网"));
+  check("并提示进站自己找预登记", els.panel.innerHTML.includes("进站后找一下"));
+}
+
+const ticketed = api.getEVENTS().find(x => (x.tickets || []).length);
+check("存在卖票展会", !!ticketed);
+if (ticketed) {
+  api.openDetail(ticketed.id);
+  check("卖票展会给大麦搜票", els.panel.innerHTML.includes("大麦搜票"));
+  check("卖票展会给活动行搜票", els.panel.innerHTML.includes("活动行搜票"));
+  check("票务按钮指向搜索页", els.panel.innerHTML.includes("search.damai.cn/search.htm"));
+}
+
+check("每场都有 website_kind 字段",
+  api.getEVENTS().every(x => typeof x.website_kind === "string"));
+check("备案页数量与官网数量可区分",
+  api.getEVENTS().filter(x => x.website_kind === "official").length > 0 &&
+  api.getEVENTS().filter(x => x.website_kind === "filing").length > 0);
+check("旧版「打开链接」按钮已移除", !els.panel.innerHTML.includes("打开链接"));
 
 // 10 在线更新（1.3 新增）
 check("内置端点以 GitHub Pages 优先",
@@ -219,8 +344,16 @@ check("应用远端数据后场次增加", api.getEVENTS().length === before + 1
 check("分类与场馆随数据重建", api.getTOPICS().length > 0 && api.getVENUES().length > 0);
 check("新增横幅显示新增场数",
   els.newbar.innerHTML.includes("新增 1 场") && !els.newbar.classList.contains("hide"));
-check("顶部统计同步刷新", els.hmeta.innerHTML.includes(String(before + 1) + " 场待开展"));
+const expoAfter = api.getEVENTS().filter(e => api.kindOf(e) === "expo").length;
+check("顶部统计同步刷新", els.hmeta.innerHTML.includes(String(expoAfter) + " 场待开展"));
 check("可用端点保持在首位", api.getENDPOINTS()[0] === api.REMOTE_ENDPOINTS[0]);
+
+// 防降级：线上还没更新时，不能被更旧的远端数据打回去
+check("防降级：远端更旧时不覆盖",
+  api.newerThanLocal({generated_at: "2026-11-01 00:00:00"}) === false);
+check("防降级：远端更新时接受",
+  api.newerThanLocal({generated_at: "2099-01-01 00:00:00"}) === true);
+check("防降级：远端无时间戳时放行", api.newerThanLocal({version: "x"}) === true);
 
 const bad = checks.filter(c => !c[1]);
 console.log("\n" + (bad.length ? "✗ " + bad.length + " 项失败" : "✓ 全部 " + checks.length + " 项通过"));

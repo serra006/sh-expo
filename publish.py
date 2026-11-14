@@ -62,6 +62,82 @@ def source_counts(events):
     return dict(collections.Counter(e.get("source", "?") for e in events))
 
 
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+
+# 这两个字段每天探测都会变，不能进 version，否则 App 会天天下载一份没变的数据
+VOLATILE_KEYS = ("link_status", "link_checked")
+
+
+def stable_events(events):
+    """算 version 时剔除易变的探测结果，保证「内容没变就不重新下载」。"""
+    out = []
+    for e in events:
+        sg = e.get("signup")
+        if sg and any(k in sg for k in VOLATILE_KEYS):
+            e = dict(e)
+            e["signup"] = {k: v for k, v in sg.items() if k not in VOLATILE_KEYS}
+        out.append(e)
+    return out
+
+
+def probe_links(events, timeout=5):
+    """探测开发者大会的报名链接，只把明确的 404/410 标成 dead。
+
+    宁可不标也不能误标：超时、403 反爬、405 不支持 HEAD 一律记 unknown。
+    把能打开的页面标成「已失效」，比不检测更糟。
+    """
+    import ssl
+    import urllib.error
+    import urllib.request
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    checked = today_str()
+    stats = {"ok": 0, "dead": 0, "unknown": 0}
+
+    def hit(url, method):
+        req = urllib.request.Request(url, method=method, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+            return r.status
+
+    for e in events:
+        if e.get("kind_type") != "dev":
+            continue
+        sg = e.get("signup") or {}
+        url = sg.get("url")
+        if not url:
+            continue
+
+        state = "unknown"
+        try:
+            state = "ok" if hit(url, "HEAD") < 400 else "unknown"
+        except urllib.error.HTTPError as ex:
+            if ex.code in (404, 410):
+                state = "dead"
+            elif ex.code in (405, 501):
+                # 站点不支持 HEAD，退回 GET 再确认一次
+                try:
+                    state = "ok" if hit(url, "GET") < 400 else "unknown"
+                except urllib.error.HTTPError as ex2:
+                    state = "dead" if ex2.code in (404, 410) else "unknown"
+                except Exception:
+                    state = "unknown"
+        except Exception:
+            state = "unknown"
+
+        # 状态没变就不刷新日期，避免无意义地改数据
+        if sg.get("link_status") != state:
+            sg["link_checked"] = checked
+        sg["link_status"] = state
+        stats[state] += 1
+        if state == "dead":
+            print("[WARN] 报名链接失效：%s -> %s" % (str(e.get("name"))[:24], url))
+
+    return stats
+
+
 def merge_dev(payload):
     """把人工维护的开发者大会并入展会数据。
 
@@ -177,7 +253,7 @@ def validate(payload, prev, min_ratio, min_count, max_age_hours):
 
 def build(payload, prev):
     events = payload["events"]
-    version = hashlib.sha256(canon(events)).hexdigest()[:12]
+    version = hashlib.sha256(canon(stable_events(events))).hexdigest()[:12]
 
     prev_events = (prev or {}).get("events") or []
     prev_ids = set(e.get("id") for e in prev_events)
@@ -250,6 +326,7 @@ def main():
     ap.add_argument("--max-age", type=float, default=3.0,
                     help="数据时间戳最长允许滞后多少小时（默认 3，CI 抓取后应为 0）")
     ap.add_argument("--force", action="store_true", help="跳过质量闸门（仅人工排障用）")
+    ap.add_argument("--no-probe", action="store_true", help="跳过报名链接存活探测（离线时用）")
     ap.add_argument("--no-upload", action="store_true")
     args = ap.parse_args()
 
@@ -262,6 +339,12 @@ def main():
     if added_dev or dropped_dev:
         print("[DEV] 开发者大会：并入 %d 场，剔除已结束 %d 场"
               % (added_dev, len(dropped_dev)))
+
+    if not args.no_probe:
+        st = probe_links(events)
+        if st["dead"]:
+            print("[DEV] 链接探测：正常 %d，失效 %d，无法判断 %d"
+                  % (st["ok"], st["dead"], st["unknown"]))
 
     problems = [] if args.force else validate(
         payload, prev, args.min_ratio, args.min_count, args.max_age)
