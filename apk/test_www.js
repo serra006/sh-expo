@@ -64,6 +64,7 @@ try {
     "getEVENTS:()=>EVENTS, getDATA:()=>DATA, getTOPICS:()=>TOPICS, getVENUES:()=>VENUES, getENDPOINTS:()=>ENDPOINTS," +
     "setTab:t=>{tab=t;render();}, getTab:()=>tab, setQ:v=>{q=v;render();}," +
     "setKind:k=>{curKind=k;curTopic='全部';curVenue='全部场馆';rebuildDerived();render();}, getKind:()=>curKind," +
+    "setTopic:t=>{curTopic=t;render();}, getCAL:()=>CAL, openCalDetail:openCalDetail," +
     "kindOf:kindOf, getKINDS:()=>KINDS," +
     "getRems:()=>rems, favSet:()=>fav, setCal:()=>{calY=today.getFullYear();calM=today.getMonth();calDay=null;tab='calendar';render();}," +
     "pickDay:d=>{calDay=d;render();}};");
@@ -147,6 +148,36 @@ if (deadUrl) {
   check("死链不再渲染报名按钮", false, "没有带网址的大会");
   check("死链给出失效提示", false, "没有带网址的大会");
 }
+
+// 1.8 全年大会日历：只有月份、没有确切日期的大会不进列表，单独给一块
+const CAL = api.getCAL();
+check("年度日历数据已加载", CAL.length > 0, CAL.length + " 场");
+api.setKind("expo");
+check("展会栏不显示年度日历", !els.main.innerHTML.includes("全年大会日历"));
+api.setKind("dev");
+check("大会栏显示年度日历", els.main.innerHTML.includes("全年大会日历"));
+const dcRows = count(els.main.innerHTML, /class="dc-row"/g);
+check("年度日历行数与数据一致", dcRows === CAL.length, dcRows + "/" + CAL.length);
+check("年度日历不重复计入近期场次",
+  count(els.main.innerHTML, /class="card[ "]/g) === devOnly.length,
+  count(els.main.innerHTML, /class="card[ "]/g) + "/" + devOnly.length);
+api.setTopic("AI");
+check("筛选时收起年度日历", !els.main.innerHTML.includes("全年大会日历"));
+api.setKind("dev");
+
+api.openCalDetail(0);
+check("日历详情标明日期待公布", els.panel.innerHTML.includes("日期待公布"));
+check("日历详情带公众号名称", !CAL[0].wechat || els.panel.innerHTML.includes(CAL[0].wechat));
+const calUrl = CAL.find(c => c.url);
+if (calUrl) {
+  api.openCalDetail(CAL.indexOf(calUrl));
+  check("有官网的日历项给按钮",
+    els.panel.innerHTML.includes('data-url="' + calUrl.url + '"'), calUrl.name);
+} else {
+  check("有官网的日历项给按钮", false, "没有带官网的日历项");
+}
+document.getElementById("sheet").classList.remove("show");
+api.setKind("expo");   // 后续断言按展会栏口径，这里复位
 
 // 2 搜索
 api.setQ("机器人");

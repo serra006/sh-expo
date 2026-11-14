@@ -4,7 +4,8 @@
   "kind_type": "固定 dev，App 靠它区分展会与开发者大会",
   "signup.url": "有直链就填（活动行、腾讯云社区、飞书表单）；只有二维码的留空，App 会提示到公众号内报名",
   "signup.qr_only": "true 表示只能扫码，界面上不给按钮",
-  "admit.channels[].wechat": "只有走公众号报名的活动才填"
+  "admit.channels[].wechat": "只有走公众号报名的活动才填",
+  "calendar": "年度大会日历：只标往年月份与城市，日期未公布时不进 events。有 url 的必须实测能打开，否则留 null"
  },
  "events": [
   {
@@ -368,6 +369,107 @@
    },
    "intro": "支付宝 AI 付的年度黑客松，五条赛道：Vibe Pay（AI 应用收款）、Skill Pay（技能收款）、Machine Pay（按量付费）、Token Pay（连续订阅）、Agent Pay（智能体支付）。评审不只比技术，更看真实付费用户数。阿里云百炼提供 Token 补贴与 1V1 技术陪跑。",
    "note": "线上为主，决赛城市主办方尚未公布，可能不在上海。报名 12-01 截止。"
+  }
+ ],
+ "calendar": [
+  {
+   "name": "百度 Create 开发者大会",
+   "month": 4,
+   "month_text": "4 月",
+   "city": "北京 / 深圳",
+   "org": "百度",
+   "scope": "外地",
+   "note": "往年 4 月办，文心大模型与 AI 应用主战场。2027 年日期待公布。",
+   "url": null,
+   "wechat": "百度AI"
+  },
+  {
+   "name": "华为 HDC 开发者大会",
+   "month": 6,
+   "month_text": "6 月",
+   "city": "东莞 · 松山湖",
+   "org": "华为",
+   "scope": "外地",
+   "note": "往年 6 月办，鸿蒙与昇腾的主场，需开发者账号实名。2027 年日期待公布。",
+   "url": null,
+   "wechat": "华为开发者联盟"
+  },
+  {
+   "name": "世界人工智能大会 WAIC",
+   "month": 7,
+   "month_text": "7 月",
+   "city": "上海 · 浦东世博",
+   "org": "上海市政府等",
+   "scope": "上海",
+   "note": "国内规格最高的 AI 大会，往年 7 月办，展览 + 论坛分开预约。2026 年已办，2027 年日期待公布。",
+   "url": "https://www.worldaic.com.cn",
+   "wechat": "世界人工智能大会"
+  },
+  {
+   "name": "云栖大会",
+   "month": 9,
+   "month_text": "9 月",
+   "city": "杭州 · 云栖小镇",
+   "org": "阿里云",
+   "scope": "外地",
+   "note": "往年 9 月办，通义与 Qoder 的新版本多在这里发布，需提前抢票。2026 年已办，2027 年日期待公布。",
+   "url": "https://yunqi.aliyun.com",
+   "wechat": "云栖大会"
+  },
+  {
+   "name": "Inclusion · 外滩大会",
+   "month": 9,
+   "month_text": "9 月",
+   "city": "上海 · 黄浦世博园区",
+   "org": "蚂蚁集团",
+   "scope": "上海",
+   "note": "金融科技与 AI 落地为主，往年 9 月办，免费但要预约。2026 年已办，2027 年日期待公布。",
+   "url": "https://www.inclusionconf.com",
+   "wechat": "外滩大会"
+  },
+  {
+   "name": "腾讯全球数字生态大会",
+   "month": 9,
+   "month_text": "9 月",
+   "city": "深圳",
+   "org": "腾讯",
+   "scope": "外地",
+   "note": "往年 9 月办，腾讯云与混元的主场，WorkBuddy 这类工具多在此设分论坛。2027 年日期待公布。",
+   "url": null,
+   "wechat": "腾讯云"
+  },
+  {
+   "name": "GDPS 全球开发者先锋大会",
+   "month": 10,
+   "month_text": "10 月",
+   "city": "上海 · 张江",
+   "org": "上海市经信委等",
+   "scope": "上海",
+   "note": "上海本地最大的开发者节，往年 10 月办，免费开放报名。2026 年已办，2027 年日期待公布。",
+   "url": null,
+   "wechat": "上海经信委"
+  },
+  {
+   "name": "CNCC 中国计算机大会",
+   "month": 10,
+   "month_text": "10 月",
+   "city": "轮值城市",
+   "org": "中国计算机学会 CCF",
+   "scope": "外地",
+   "note": "学术向，往年 10 月办，举办城市每年轮换，参会需注册费。2027 年城市与日期待公布。",
+   "url": null,
+   "wechat": "中国计算机学会"
+  },
+  {
+   "name": "火山引擎 Force 大会",
+   "month": 12,
+   "month_text": "12 月",
+   "city": "北京 / 上海",
+   "org": "字节跳动 · 火山引擎",
+   "scope": "外地",
+   "note": "往年 12 月办，豆包大模型与 Trae 的主场，常在上海设场。2027 年日期待公布。",
+   "url": null,
+   "wechat": "火山引擎"
   }
  ]
 }

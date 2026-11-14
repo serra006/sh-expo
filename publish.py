@@ -3,7 +3,7 @@
 
 设计要点：
   1. 坏数据绝不覆盖好数据。任何一个源突然归零、或总量骤降，都要整体判失败。
-  2. version 只由 events 内容决定，内容没变 App 就不用重新下载。
+  2. version 由 events 与 calendar 的内容决定，内容没变 App 就不用重新下载。
   3. 发布目标可插拔：默认写本地 public/（供 GitHub 托管），配了 R2 环境变量就额外上传。
 """
 import argparse
@@ -153,7 +153,8 @@ def merge_dev(payload):
     if not os.path.exists(path):
         return 0, []
     try:
-        devs = load(path).get("events") or []
+        doc = load(path)
+        devs = doc.get("events") or []
     except (ValueError, OSError) as e:
         print("[WARN] dev_events.json 读取失败，跳过开发者大会：%s" % e)
         return 0, []
@@ -169,6 +170,15 @@ def merge_dev(payload):
         if today < s:
             return "upcoming"
         return "past" if today > en else "ongoing"
+
+    # 年度大会日历：只有月份、没有确切日期，不能进 events（events 必须有 start/end），
+    # 单独挂在 payload.calendar 上，由 App 在「开发者大会」栏里作为全年日历展示。
+    cal = doc.get("calendar") or []
+    if cal:
+        payload["calendar"] = sorted(cal, key=lambda c: (int(c.get("month") or 99),
+                                                         c.get("name") or ""))
+    else:
+        payload.pop("calendar", None)
 
     events = payload.get("events") or []
     dropped = []
@@ -253,7 +263,12 @@ def validate(payload, prev, min_ratio, min_count, max_age_hours):
 
 def build(payload, prev):
     events = payload["events"]
-    version = hashlib.sha256(canon(stable_events(events))).hexdigest()[:12]
+    calendar = payload.get("calendar") or []
+    # 日历也算进 version：只改日历（比如补了一场大厂大会）时 App 也必须重新拉一次
+    version = hashlib.sha256(canon({
+        "events": stable_events(events),
+        "calendar": calendar,
+    })).hexdigest()[:12]
 
     prev_events = (prev or {}).get("events") or []
     prev_ids = set(e.get("id") for e in prev_events)
@@ -271,12 +286,15 @@ def build(payload, prev):
         "new_ids": new_ids[:100],
         "removed_count": removed,
         "sources": source_counts(events),
+        "calendar_count": len(calendar),
+        "calendar": calendar,
         "events": events,
     }
     raw = canon(latest)
     manifest = {
         "version": version,
         "count": len(events),
+        "calendar_count": len(calendar),
         "new_count": len(new_ids),
         "updated": latest["updated"],
         "generated_at": latest["generated_at"],
@@ -339,6 +357,9 @@ def main():
     if added_dev or dropped_dev:
         print("[DEV] 开发者大会：并入 %d 场，剔除已结束 %d 场"
               % (added_dev, len(dropped_dev)))
+    cal_n = len(payload.get("calendar") or [])
+    if cal_n:
+        print("[DEV] 年度大会日历：%d 场（只有月份，无确切日期，不进列表）" % cal_n)
 
     if not args.no_probe:
         st = probe_links(events)
@@ -378,6 +399,7 @@ def main():
     dump(health_path, {
         "ok": True, "checked_at": stamp(),
         "version": latest["version"], "count": latest["count"],
+        "calendar_count": latest["calendar_count"],
         "new_count": latest["new_count"], "removed_count": latest["removed_count"],
         "sources": latest["sources"], "publish": note,
     }, pretty=True)

@@ -101,6 +101,23 @@ header.stuck{border-color:var(--line)}
 .kindbar .kb.on{background:var(--bg);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .kindbar .kb.on .n{opacity:.85}
 
+/* ---------- 全年大会日历（只有月份，没有确切日期） ---------- */
+.devcal{margin:18px 0 0;border-top:1px solid var(--line);padding-top:14px}
+.dc-head{display:flex;align-items:baseline;gap:8px;padding-bottom:6px;flex-wrap:wrap}
+.dc-head .t{font-size:13px;font-weight:600}
+.dc-head .s{font-size:11px;color:var(--muted)}
+.dc-row{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+.dc-row:active{opacity:.6}
+.dc-m{flex:none;width:38px;text-align:center;background:var(--surface2);
+  border-radius:9px;padding:5px 0;line-height:1.15}
+.dc-m b{display:block;font-size:15px;font-weight:600}
+.dc-m span{font-size:9.5px;color:var(--dim)}
+.dc-b{flex:1;min-width:0}
+.dc-n{font-size:13.5px;font-weight:600;line-height:1.35}
+.dc-c{font-size:10.5px;color:var(--dim);margin-left:5px;font-weight:400}
+.dc-t{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.dc-tip{font-size:11px;color:var(--dim);padding:11px 0 0;line-height:1.55}
+
 /* ---------- 列表 ---------- */
 main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 18px;-webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain}
@@ -296,6 +313,8 @@ if (!String.prototype.padStart) {
 }
 let DATA = __DATA__;
 let EVENTS = DATA.events || [];
+// 全年大会日历：只有月份、没有确切日期，所以不在 EVENTS 里，单独渲染
+let CAL = DATA.calendar || [];
 const MIN_COUNT = 30;
 // 分发端点：GitHub Pages 优先，jsDelivr / raw 兜底；manifest 还能下发新端点覆盖这里。
 const REMOTE_ENDPOINTS = [
@@ -505,12 +524,80 @@ function listHTML(list, withGroups){
   return html;
 }
 
+/* ---------- 全年大会日历（只有月份，日期未公布） ---------- */
+function renderDevCal(){
+  if (curKind !== "dev" || !CAL.length) return "";
+  // 筛选或搜索时收起：这时用户要看的是结果，不是年度参考
+  if (curTopic !== "全部" || curVenue !== "全部场馆" || isSearching()) return "";
+  const rows = CAL.map(function(c, i){
+    return `<div class="dc-row" data-cal="${i}">
+        <div class="dc-m"><b>${esc(String(c.month || "?"))}</b><span>月</span></div>
+        <div class="dc-b">
+          <div class="dc-n">${esc(c.name)}<span class="dc-c">${esc(c.city || "")}</span></div>
+          <div class="dc-t">${esc(c.note || "")}</div>
+        </div>
+      </div>`;
+  }).join("");
+  return `<div class="devcal">
+      <div class="dc-head"><span class="t">全年大会日历</span><span class="s">按往年惯例 · 日期以主办方公布为准</span></div>
+      ${rows}
+      <div class="dc-tip">这些大会每年固定在某个季节办，次年日期一般提前 1~3 个月才公布，所以不放进上面的列表。
+       日期公布后我会补成正式条目，那时才有报名入口。</div>
+    </div>`;
+}
+
+function openCalDetail(i){
+  const c = CAL[i]; if (!c) return;
+  const panel = document.getElementById("panel");
+  panel.innerHTML = `
+    <div class="grab"></div>
+    <h2>${esc(c.name)}</h2>
+    <div class="subline"><span class="tag">年度大会</span><span class="tag">日期待公布</span></div>
+    <div class="row"><div class="k">时间</div><div class="v">往年 ${esc(c.month_text || (c.month + " 月"))}，次年具体日期尚未公布</div></div>
+    <div class="row"><div class="k">地点</div><div class="v">${esc(c.city || "")}</div></div>
+    ${c.org ? `<div class="row"><div class="k">主办</div><div class="v">${esc(c.org)}</div></div>` : ""}
+    ${c.wechat ? `<div class="row"><div class="k">公众号</div><div class="v">
+      <div class="line wxline">公众号：<b>${esc(c.wechat)}</b>
+        <button class="mini inline" data-copy="${esc(c.wechat)}">复制名称</button></div>
+      </div></div>` : ""}
+    <div class="row"><div class="k">说明</div><div class="v">${esc(c.note || "")}</div></div>
+    <div class="row"><div class="k">入口</div><div class="v">
+      ${c.url
+        ? `<div class="entry"><button class="btn primary" data-url="${esc(c.url)}">打开大会官网</button></div>
+           <div class="hint" style="margin-top:6px">官网常年在线，日期与报名一般先在这里和公众号公布</div>`
+        : `<span class="hint">暂无固定官网，日期公布时以公众号${c.wechat ? "「" + esc(c.wechat) + "」" : "公告"}为准</span>`}
+      </div></div>
+    <div class="actions2"><button class="btn" id="btnCloseCal">关闭</button></div>`;
+
+  document.getElementById("sheet").classList.add("show");
+  document.getElementById("btnCloseCal").onclick = function(){
+    document.getElementById("sheet").classList.remove("show");
+  };
+  panel.querySelectorAll("[data-url]").forEach(a => {
+    a.onclick = ev => {
+      ev.preventDefault();
+      const u = a.dataset.url;
+      if (IS_APP && NA.openUrl) NA.openUrl(u); else window.open(u, "_blank");
+    };
+  });
+  panel.querySelectorAll("[data-copy]").forEach(b => {
+    b.onclick = ev => { ev.stopPropagation(); copyToClipboard(b.dataset.copy); };
+  });
+}
+
 /* ---------- 时间轴 ---------- */
 function renderTimeline(){
   const list = filter(EVENTS);
+  const devN = EVENTS.filter(e => kindOf(e) === "dev").length;
+  const foot = curKind === "dev"
+    ? `数据更新于 ${esc((DATA.updated||"").slice(0,10))} · 近期 ${devN} 场`
+      + (CAL.length ? ` · 全年日历 ${CAL.length} 场` : "")
+      + `<br>来源：主办方公告 · 活动行 · 官网，人工核实`
+    : `数据更新于 ${esc((DATA.updated||"").slice(0,10))} · 共 ${EVENTS.length} 场`
+      + `<br>来源：国家会展中心 · 新国际博览中心 · 市商务委`;
   return `<div style="height:2px"></div>` + listHTML(list, true)
-    + `<div class="foot">数据更新于 ${esc((DATA.updated||"").slice(0,10))} · `
-    + `共 ${EVENTS.length} 场<br>来源：国家会展中心 · 新国际博览中心 · 市商务委</div>`
+    + renderDevCal()
+    + `<div class="foot">${foot}</div>`
     + `<div class="pad"></div>`;
 }
 
@@ -657,6 +744,8 @@ document.getElementById("main").onclick = e => {
     calDay = (calDay === cell.dataset.d) ? null : cell.dataset.d;
     render(); return;
   }
+  const crow = e.target.closest("[data-cal]");
+  if (crow) { openCalDetail(Number(crow.dataset.cal)); return; }
   const card = e.target.closest(".card");
   if (card) openDetail(card.dataset.id);
 };
@@ -1081,6 +1170,7 @@ function applyRemote(o, base){
   const oldIds = new Set(EVENTS.map(e => e.id));
   DATA = o;
   EVENTS = o.events;
+  CAL = o.calendar || [];
   const added = EVENTS.filter(e => !oldIds.has(e.id)).length;
   if (base && ENDPOINTS[0] !== base) {
     ENDPOINTS = [base].concat(ENDPOINTS.filter(x => x !== base));
@@ -1140,7 +1230,7 @@ function bootSync(){
     if (cached) {
       try {
         const o = JSON.parse(cached);
-        if (validData(o)) { DATA = o; EVENTS = o.events; }
+        if (validData(o)) { DATA = o; EVENTS = o.events; CAL = o.calendar || []; }
       } catch(e) {}
     }
   }
