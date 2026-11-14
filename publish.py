@@ -62,6 +62,54 @@ def source_counts(events):
     return dict(collections.Counter(e.get("source", "?") for e in events))
 
 
+def merge_dev(payload):
+    """把人工维护的开发者大会并入展会数据。
+
+    放在发布层而不是 fetch.py：这类活动没有稳定的机器可读源，靠人工清单维护，
+    和展会抓取是两条完全独立的链路，混在一起改反而容易互相牵连。
+    已结束的活动直接剔除，口径与展会一致（App 只展示未结束的）。
+    """
+    path = os.path.join(ROOT, "data", "dev_events.json")
+    if not os.path.exists(path):
+        return 0, []
+    try:
+        devs = load(path).get("events") or []
+    except (ValueError, OSError) as e:
+        print("[WARN] dev_events.json 读取失败，跳过开发者大会：%s" % e)
+        return 0, []
+
+    today = datetime.now(CST).date()
+
+    def status_of(e):
+        try:
+            s = datetime.strptime(str(e.get("start"))[:10], "%Y-%m-%d").date()
+            en = datetime.strptime(str(e.get("end") or e.get("start"))[:10], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            return "upcoming"
+        if today < s:
+            return "upcoming"
+        return "past" if today > en else "ongoing"
+
+    events = payload.get("events") or []
+    known = set(e.get("id") for e in events)
+    added, dropped = [], []
+    for e in devs:
+        st = status_of(e)
+        if st == "past":
+            dropped.append(e.get("name", "?"))
+            continue
+        if e.get("id") in known:
+            continue
+        e["status"] = st
+        e["kind_type"] = "dev"
+        added.append(e)
+
+    if added:
+        payload["events"] = events + added
+        payload["count"] = len(payload["events"])
+    return len(added), dropped
+
+
 def validate(payload, prev, min_ratio, min_count, max_age_hours):
     """返回问题列表；空列表表示可以发布。"""
     problems = []
@@ -190,7 +238,11 @@ def main():
     health_path = os.path.join(args.public, "health.json")
     prev = load(prev_path) if os.path.exists(prev_path) else None
     payload = load(args.input)
+    added_dev, dropped_dev = merge_dev(payload)
     events = payload.get("events") or []
+    if added_dev or dropped_dev:
+        print("[DEV] 开发者大会：并入 %d 场，剔除已结束 %d 场"
+              % (added_dev, len(dropped_dev)))
 
     problems = [] if args.force else validate(
         payload, prev, args.min_ratio, args.min_count, args.max_age)

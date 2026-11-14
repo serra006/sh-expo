@@ -91,6 +91,16 @@ header.stuck{border-color:var(--line)}
 .chips.venue{padding-top:0;padding-bottom:12px}
 .chips.venue .chip{font-size:12px;padding:5px 10px;border-radius:14px;color:var(--dim)}
 
+/* ---------- 类型切换（展会 / 开发者大会） ---------- */
+.kindbar{display:flex;gap:4px;margin:10px 18px 0;padding:4px;flex:none;
+  background:var(--surface2);border-radius:12px}
+.kindbar .kb{flex:1;text-align:center;padding:7px 0;border-radius:9px;font-size:13px;
+  color:var(--dim);transition:all .18s;white-space:nowrap}
+.kindbar .kb b{font-weight:600}
+.kindbar .kb .n{font-size:11px;opacity:.65;margin-left:4px}
+.kindbar .kb.on{background:var(--bg);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.kindbar .kb.on .n{opacity:.85}
+
 /* ---------- 列表 ---------- */
 main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 18px;-webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain}
@@ -244,8 +254,9 @@ main::-webkit-scrollbar{display:none}
   </div>
 </header>
 
-<nav class="chips" id="chipsTopic"></nav>
-<nav class="chips venue" id="chipsVenue"></nav>
+    <nav class="kindbar" id="kindBar"></nav>
+    <nav class="chips" id="chipsTopic"></nav>
+    <nav class="chips venue" id="chipsVenue"></nav>
 
 <div class="newbar hide" id="newbar"></div>
 
@@ -343,17 +354,41 @@ loadRems();
 
 /* ---------- 状态 ---------- */
 let tab = "timeline", curTopic = "全部", curVenue = "全部场馆", q = "";
+let curKind = "expo";
+const kindOf = e => (e && e.kind_type === "dev") ? "dev" : "expo";
+const KINDS = [{k:"expo", label:"展会"}, {k:"dev", label:"开发者大会"}];
 let calY = today.getFullYear(), calM = today.getMonth(), calDay = null;
 
 /* ---------- 顶部统计（在线更新后要重算） ---------- */
 function updateMeta(){
-  const featCount = EVENTS.filter(e => e.featured).length;
-  const aiCount = EVENTS.filter(isAI).length;
+  const pool = EVENTS.filter(e => kindOf(e) === curKind);
+  const featCount = pool.filter(e => e.featured).length;
+  const aiCount = pool.filter(isAI).length;
+  const unit = curKind === "dev" ? "场活动待参加" : "场待开展";
   const stamp = esc((DATA.updated || "").slice(0, 10));
   document.getElementById("hmeta").innerHTML =
-    EVENTS.length + " 场待开展<br>" + featCount + " 场重磅 · " + aiCount + " 场 AI"
+    pool.length + " " + unit + "<br>" + featCount + " 场重磅 · " + aiCount + " 场 AI"
     + '<span class="sync">' + (stamp ? "数据 " + stamp + " · " : "") + "点击刷新</span>";
 }
+
+/* ---------- 类型切换：展会 / 开发者大会 ---------- */
+function buildKind(){
+  const el = document.getElementById("kindBar");
+  if (!el) return;
+  el.innerHTML = KINDS.map(function(o){
+    const n = EVENTS.filter(e => kindOf(e) === o.k).length;
+    const on = o.k === curKind;
+    return `<div class="kb${on?" on":""}" data-k="${o.k}"><b>${o.label}</b><span class="n">${n}</span></div>`;
+  }).join("");
+}
+document.getElementById("kindBar").onclick = function(ev){
+  const el = ev.target.closest(".kb"); if (!el) return;
+  const k = el.dataset.k;
+  if (k === curKind) return;
+  curKind = k;
+  curTopic = "全部"; curVenue = "全部场馆";
+  rebuildDerived(); render();
+};
 
 /* ---------- chips ---------- */
 function buildChips(){
@@ -398,8 +433,9 @@ function match(e, s){
   return s.toLowerCase().split(/\s+/).every(w => hay.includes(w));
 }
 
-function filter(list){
+function filter(list, skipKind){
   let r = list;
+  if (!skipKind) r = r.filter(e => kindOf(e) === curKind);
   if (curTopic === "重磅") r = r.filter(e => e.featured);
   else if (curTopic === "进行中") r = r.filter(e => e.status === "ongoing");
   else if (curTopic === "一周内") r = r.filter(e => days(e.start) >= 0 && days(e.start) <= 7);
@@ -547,7 +583,7 @@ function renderCalendar(){
 
 /* ---------- 关注 ---------- */
 function renderFav(){
-  const star = filter(EVENTS.filter(e => fav.has(e.id)));
+  const star = filter(EVENTS.filter(e => fav.has(e.id)), true);
   const remList = EVENTS.filter(e => rems[e.id])
     .sort((a,b) => (rems[a.id]||0) - (rems[b.id]||0));
   let html = `<div style="height:6px"></div>`;
@@ -578,8 +614,10 @@ function isSearching(){ return q.length > 0; }
 
 function render(){
   const main = document.getElementById("main");
-  document.getElementById("chipsTopic").style.display = (tab === "timeline" && !isSearching()) ? "flex" : "none";
-  document.getElementById("chipsVenue").style.display = (tab === "timeline" && !isSearching()) ? "flex" : "none";
+  const chipsOn = (tab === "timeline" && !isSearching());
+  document.getElementById("kindBar").style.display = chipsOn ? "flex" : "none";
+  document.getElementById("chipsTopic").style.display = chipsOn ? "flex" : "none";
+  document.getElementById("chipsVenue").style.display = chipsOn ? "flex" : "none";
   if (isSearching() && tab !== "timeline") {
     const list = filter(EVENTS);
     main.innerHTML = `<div class="daygroup" style="position:static">
@@ -707,7 +745,10 @@ function admitRows(e){
   if (a.fee) h += `<div class="row"><div class="k">费用</div><div class="v">${esc(a.fee)}</div></div>`;
 
   h += `<div class="row"><div class="k">依据</div><div class="v hint">`
-     + (a.verified ? "主办方官方公告" : "按同类展会通行做法推断，出发前请再核一次主办方公告")
+     + (a.verified ? "主办方官方公告"
+        : (kindOf(e) === "dev"
+            ? "按主办方公开信息整理，报名前请再核一次官方公告"
+            : "按同类展会通行做法推断，出发前请再核一次主办方公告"))
      + `</div></div>`;
   return h;
 }
@@ -723,22 +764,34 @@ function linkKind(e){
 
 function entryRows(e){
   const kind = linkKind(e);
+  const dev = kindOf(e) === "dev";
   const sg = e.signup || null;
   const tick = e.tickets || [];
   const btns = [];
   if (sg && sg.url) {
     btns.push(`<button class="btn primary" data-url="${esc(sg.url)}">${esc(sg.label || "在线预登记")}</button>`);
   }
-  if (kind === "official" && e.website) {
-    btns.push(`<button class="btn${sg ? "" : " primary"}" data-url="${esc(e.website)}">打开展会官网</button>`);
+  if (kind === "official" && e.website && !(sg && sg.url === e.website)) {
+    btns.push(`<button class="btn${(sg && sg.url) ? "" : " primary"}" data-url="${esc(e.website)}">${dev ? "打开活动页" : "打开展会官网"}</button>`);
   }
   tick.forEach(t => {
     btns.push(`<button class="btn" data-url="${esc(t.url)}">${esc(t.name)}搜票</button>`);
   });
-  if (!btns.length) return "";
+  if (!btns.length) {
+    /* 只有二维码的活动没有可点网址，也要明确告诉用户入口在哪，不能让页面看起来没入口 */
+    if (sg && sg.qr_only) {
+      return `<div class="row"><div class="k">报名</div><div class="v">`
+        + `<span class="tag open">${esc(sg.label || "扫码报名")}</span>`
+        + `<div class="hint" style="margin-top:6px">该活动只有二维码入口，没有可点击的网址。`
+        + `到主办方公告里扫码，或按下方「通道」说明操作。</div>`
+        + `</div></div>`;
+    }
+    return "";
+  }
 
   let hint = "";
-  if (sg) hint = "已在该展官网找到预登记页，点按钮直接去登记";
+  if (dev) hint = "点按钮直接去报名页，部分活动有名额与身份审核";
+  else if (sg) hint = "已在该展官网找到预登记页，点按钮直接去登记";
   else if (kind === "official") hint = "官网首页一般有「观众预登记 / 参观登记」，进站后找一下";
   else if (tick.length) hint = "在票务平台搜展会名，看到本场即可买票";
 
@@ -977,7 +1030,7 @@ function validData(o){
 function showNewBar(n){
   const el = document.getElementById("newbar");
   if (!el) return;
-  el.innerHTML = '<span>' + (n > 0 ? "新增 " + n + " 场展会，已自动加入" : "展会数据已更新")
+  el.innerHTML = '<span>' + (n > 0 ? "新增 " + n + " 场活动，已自动加入" : "数据已更新")
                + '</span><span class="x">✕</span>';
   el.classList.remove("hide");
 }
@@ -987,10 +1040,11 @@ document.getElementById("newbar").onclick = function(){
 
 function rebuildDerived(){
   TOPICS = TOPIC_ORDER.filter(t => FIXED.includes(t) || hasT(t));
-  VENUES = [...new Set(EVENTS.map(e => e.venue_short))];
+  VENUES = [...new Set(EVENTS.filter(e => kindOf(e) === curKind).map(e => e.venue_short))];
   if (!TOPICS.includes(curTopic)) curTopic = "全部";
   if (!VENUES.includes(curVenue)) curVenue = "全部场馆";
   updateMeta();
+  buildKind();
   buildChips();
 }
 
