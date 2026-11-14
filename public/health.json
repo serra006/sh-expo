@@ -1,14 +1,14 @@
 {
  "ok": true,
- "checked_at": "2026-11-14 09:31:44",
- "version": "887deb0306e4",
- "count": 98,
- "new_count": 2,
- "removed_count": 4,
+ "checked_at": "2026-11-13 09:35:29",
+ "version": "320bcb0df46f",
+ "count": 105,
+ "new_count": 0,
+ "removed_count": 0,
  "sources": {
-  "GOV": 62,
-  "GOV+SNIEC": 19,
-  "SNIEC": 10,
+  "GOV": 66,
+  "SNIEC": 12,
+  "GOV+SNIEC": 20,
   "NECC": 5,
   "GOV+NECC": 2
  },

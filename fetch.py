@@ -11,7 +11,9 @@ import os
 import re
 import time
 import hashlib
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
+from urllib.parse import quote, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -183,9 +185,66 @@ def make_id(source, name, start):
 # verified: True 表示有主办方官方公告依据，False 为行业惯例推断
 # channels: 多通道报名。每通道独立标注开放与截止，避免"一条说明概括全部"造成误导
 #   state: closed=已结束  open=开放中  soon=未开始  空=按日期推算/以公告为准
-def _ch(name, who, where, window, steps="", note="", deadline="", state=""):
+# ---------------- 公众号 / 小程序名 ----------------
+# 微信里报名基本都要先搜到主办方的公众号或小程序。原先所有展共用一句
+# 「展会官网或官方微信公众号（用展会全名搜索）」，等于没给名字，用户还得自己猜。
+# 这里给每场展会生成具体名称：知名展用白名单（已核实），其余用清洗后的展会名当搜索词。
+WECHAT_KNOWN = [
+    (["进口博览会"], "中国国际进口博览会", "小程序", True),
+    (["国际工业博览会"], "中国国际工业博览会", "公众号", True),
+    (["国际汽车工业展览会", "汽车展览会"], "上海车展", "小程序", True),
+    (["chinajoy", "数码互动娱乐"], "ChinaJoy", "公众号", True),
+    (["世界人工智能大会", "waic"], "世界人工智能大会", "公众号", True),
+    (["外滩大会"], "外滩大会", "公众号", True),
+]
+
+
+def _wx_from_text(text):
+    """从「微信小程序「XXX」」这类文案里提取通道名，提取不到返回 None。"""
+    m = re.search(r"「(.+?)」", text or "")
+    if not m:
+        return None
+    return dict(name=m.group(1),
+                type=("小程序" if "小程序" in text else "公众号"),
+                verified=True)
+
+
+def wechat_of(name):
+    """展会对应的公众号/小程序：返回 (名称, 类型, 是否已核实)。"""
+    low = (name or "").lower()
+    for kws, wx, kind, ok in WECHAT_KNOWN:
+        if any(k.lower() in low for k in kws):
+            return wx, kind, ok
+    # 公众号名里带年份或届次基本搜不到，先剥掉再当搜索词
+    core = re.sub(r"^\s*20\d{2}\s*年?\s*", "", (name or "").strip())
+    core = re.sub(r"第[0-9一二三四五六七八九十百零]+届", "", core)  # 届次可能出现在名字中间
+    core = re.sub(r"\s+", "", core).strip("·-—、,，")
+    # 联展常写成「A展/B展/C展」，公众号一般只挂主展名，取第一段更好搜
+    if len(core) > 20 and ("/" in core or "、" in core):
+        core = re.split(r"[/、]", core)[0].strip()
+    return (core or (name or "").strip()), "公众号", False
+
+
+def _fill_wechat(admit, wxch):
+    """给 admit 与每个通道补齐 wechat 字段（通道自带的「名称」优先）。"""
+    admit.setdefault("wechat", dict(wxch))
+    for c in admit.get("channels") or []:
+        if not c.get("wechat"):
+            c["wechat"] = _wx_from_text(c.get("where")) or dict(wxch)
+    return admit
+
+
+def _clone_rule(rule):
+    """规则里的 channels 是模块级共享对象，必须深一层复制，否则 wechat 会串场。"""
+    d = dict(rule)
+    d["channels"] = [dict(c) for c in (rule.get("channels") or [])]
+    return d
+
+
+def _ch(name, who, where, window, steps="", note="", deadline="", state="", wechat=None):
     return dict(name=name, who=who, where=where, window=window, steps=steps,
-                note=note, deadline=deadline, state=state)
+                note=note, deadline=deadline, state=state,
+                wechat=wechat if wechat is not None else _wx_from_text(where))
 
 
 CIIE_CHANNELS = [
@@ -220,41 +279,44 @@ ADMISSION_RULES = [
         level="public", kind="预登记免费",
         summary="免费，但要提前实名预登记，现场凭身份证原件入场。",
         how="提前在线预登记免费，现场凭身份证原件刷闸机入场",
-        where="官网或官方公众号「中国国际工业博览会」",
+        where="微信公众号「中国国际工业博览会」",
         steps="", deadline="", fee="", verified=True,
         channels=[_ch("观众预登记", "18 岁以上专业观众",
-                      "官网或官方公众号「中国国际工业博览会」",
+                      "微信公众号「中国国际工业博览会」",
                       "开展前约 2 个月开放，开展前 1–3 天截止",
-                      note="预登记免费；未预登记现场可能收门票或无法入场")])),
+                      note="预登记免费，官网同入口；未预登记现场可能收门票或无法入场")])),
     # 车展：公众日售票
     (["国际汽车工业展览会", "汽车展览会"], dict(
         level="public", kind="购票入场",
         summary="公众日要买票，专业日需证件；热门日门票会提前售罄。",
         how="分专业日与公众日，公众日需购票；热门日建议提前买",
-        where="官方小程序「上海车展」或大麦、猫眼",
+        where="微信小程序「上海车展」",
         steps="", deadline="", fee="", verified=False,
         channels=[
-            _ch("公众日门票", "所有人", "官方小程序「上海车展」或大麦、猫眼",
-                "开展前约 1 个月开售，售完即止", note="周末与节假日票最紧张"),
+            _ch("公众日门票", "所有人", "微信小程序「上海车展」",
+                "开展前约 1 个月开售，售完即止",
+                note="周末与节假日票最紧张；大麦、猫眼也会开售公众日票"),
             _ch("专业日证件", "汽车行业从业者", "车展官网 media/trade 入口",
                 "开展前 2–3 个月开放申请", note="需单位信息审核，不对普通观众开放")])),
     (["ChinaJoy", "中国国际数码互动娱乐"], dict(
         level="public", kind="购票入场",
         summary="全程售票，热门日与限定周边常提前售罄。",
         how="需购票，热门场次常提前售罄",
-        where="官方小程序或大麦、猫眼",
+        where="微信公众号「ChinaJoy」",
         steps="", deadline="", fee="", verified=False,
-        channels=[_ch("门票", "所有人", "官方小程序或大麦、猫眼",
-                      "开展前约 1 个月开售", note="周末场通常最先售罄")])),
+        channels=[_ch("门票", "所有人", "微信公众号「ChinaJoy」",
+                      "开展前约 1 个月开售",
+                      note="周末场通常最先售罄；大麦、猫眼同步开票")])),
     # 家博会 / 婚博会这类面向家庭消费的，普遍免费索票
     (["家博会", "家居博览会", "婚博会", "婚庆博览会"], dict(
         level="public", kind="免费索票",
         summary="免费，但要先在官网或公众号索票，现场凭票或身份证入场。",
         how="官网或小程序免费索票，现场凭票或身份证入场",
-        where="官网或官方微信公众号",
+        where="展会官网",
         steps="", deadline="", fee="", verified=False,
-        channels=[_ch("免费索票", "所有人", "官网或官方微信公众号",
-                      "开展前 1–2 个月开放索票", note="现场通常也可扫码登记，但排队较久")])),
+        channels=[_ch("免费索票", "所有人", "展会官网",
+                      "开展前 1–2 个月开放索票",
+                      note="公众号也能索票；现场通常也可扫码登记，但排队较久")])),
 ]
 
 # 消费类展会（要买票）与专业展（免费预登记）的判别
@@ -262,33 +324,181 @@ CONSUMER_KEYWORDS = ["动漫", "漫画", "游戏展", "宠物", "潮玩", "玩�
                      "吃货", "母婴", "婴童", "婚庆", "婚礼", "家居", "家装"]
 
 
+# ---------------- 参加入口（能不能点一下就进去报名） ----------------
+#
+# 现实约束（2026-11 实测）：
+#   - 市商务委备案页 88/105，只有主办方/日期/文号/面积，零外链零电话，给不出入口
+#   - 国家会展中心「官网」列填充率仅 12%，新国际较高
+#   - 所以能做的就是：把真官网变成按钮 + 在官网首页找预登记入口
+#   - 微信小程序无法外部直链（URL Scheme 需小程序方用 AppID+Secret 生成 ticket），
+#     公众号只能复制名称去搜，这条路没有任何绕过办法
+
+FILING_HOST = "expo.sww.sh.gov.cn"
+
+# 官网首页上「观众预登记」类入口的文本/链接特征
+SIGNUP_RE = re.compile(
+    r"预登记|观众登记|参观登记|观众注册|免费登记|立即登记|登记参观|参观报名|"
+    r"观众报名|我要参观|报名参观|报名参加|参会报名|购票|买票|门票|"
+    r"register|registration|visitor|attend", re.I)
+
+# 明显不是「观众报名」入口的链接，命中关键词也要排掉：
+#   新闻稿里常出现「预登记」字样但不是入口；「参展登记」是给展商的，不是观众
+SIGNUP_BLOCK_RE = re.compile(
+    r"新闻|资讯|公告|展商名录|展商列表|exhibitor|news|press|article|参展|展商|"
+    r"预订展位|booth|book.?a.?stand", re.I)
+
+# 票务平台：直接拼搜索页，不依赖具体展会 ID
+TICKET_PLATFORMS = [
+    ("大麦", "https://search.damai.cn/search.htm?keyword="),
+    ("活动行", "https://www.huodongxing.com/search?keyword="),
+]
+
+
+def link_kind(url):
+    """区分「展会自己的官网」(official) 与「市商务委备案页」(filing)。"""
+    u = (url or "").strip()
+    if not u:
+        return ""
+    return "filing" if FILING_HOST in u else "official"
+
+
+def signup_keyword(name):
+    """拼票务搜索词：剥年份届次 + 去通用后缀 + 截短，太长在大麦搜不到。"""
+    s = re.sub(r"^(20\d{2}\s*年?|第[0-9一二三四五六七八九十百零]+届)", "", name or "").strip()
+    s = re.split(r"[/／、]", s)[0].strip()
+    s = re.sub(r"(展览会|博览会|展览|展销会|交易会|大会|峰会)$", "", s).strip()
+    return quote(s[:12])
+
+
+def is_ticketed(name, category="", admit_kind=""):
+    """要不要给票务平台入口。
+
+    只在「确实卖票」时给：工业专业展免费预登记，挂个大麦搜票反而误导；
+    「客车展览会」这种含「车展」二字的也算误判，所以不靠关键词猜。
+    """
+    if admit_kind == "购票入场":
+        return True
+    return category in ("动漫游戏", "宠物")
+
+
+def tickets_of(name):
+    kw = signup_keyword(name)
+    return [{"name": p, "url": base + kw} for p, base in TICKET_PLATFORMS]
+
+
+def discover_signup(base_url, timeout=12):
+    """在展会官网首页找「观众预登记 / 参观登记 / 购票」入口，返回绝对链接。
+
+    只扫首页、不递归。找不到返回 None —— 不少官网的入口是 JS 渲染或图片按钮，
+    命中率本来就不高，找不到是常态，不要当异常。
+    """
+    if not base_url:
+        return None
+    try:
+        r = requests.get(base_url, headers=HEADERS, timeout=timeout, verify=False,
+                         allow_redirects=True)
+        if r.status_code != 200:
+            return None
+        r.encoding = r.apparent_encoding or "utf-8"
+        html = r.text
+    except Exception:
+        return None
+
+    home_host = urlparse(r.url).netloc.lower()
+    soup = BeautifulSoup(html, "html.parser")
+    best = None
+    for a in soup.find_all("a", href=True):
+        txt = a.get_text(" ", strip=True)
+        href = (a.get("href") or "").strip()
+        if not href or href.startswith(("javascript:", "#", "mailto:", "tel:")):
+            continue
+        # 新闻稿里常出现「预登记」字样，但那是通知不是入口
+        if SIGNUP_BLOCK_RE.search(txt) or SIGNUP_BLOCK_RE.search(href):
+            continue
+        if not (SIGNUP_RE.search(txt) or SIGNUP_RE.search(href)):
+            continue
+        full = urljoin(r.url, href)
+        if not full.startswith("http"):
+            continue
+        score = 0
+        if urlparse(full).netloc.lower() == home_host:
+            score += 2           # 同域优先，跨域多半是票务/外部登记系统
+        if 0 < len(txt) <= 12:
+            score += 1           # 导航按钮文字短
+        if re.search(r"预登记|登记|报名|register|visitor", txt, re.I):
+            score += 2
+        if best is None or score > best[0]:
+            best = (score, full, txt)
+    if not best:
+        return None
+    label = (best[2] or "").strip()[:14] or "在线预登记"
+    return {"url": best[1], "label": label}
+
+
+def enrich_entry(items):
+    """给每场展会补参加入口字段：website_kind / signup / tickets。"""
+    official = [it for it in items if it.get("website_kind") == "official" and it.get("website")]
+    found = {}
+    if official:
+        print("[入口] 在 %d 个展会官网找预登记入口" % len(official))
+        # 并发探测，13~30 个站几秒内完成；单站失败不影响其他
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            futs = {pool.submit(discover_signup, it["website"]): it for it in official}
+            for f, it in futs.items():
+                try:
+                    sg = f.result()
+                except Exception:
+                    sg = None
+                found[it["id"]] = sg
+        hit = sum(1 for v in found.values() if v)
+        print("[入口] 命中 %d / %d" % (hit, len(official)))
+
+    for it in items:
+        if it.get("website_kind") == "official":
+            sg = found.get(it["id"])
+            if sg:
+                it["signup"] = sg
+        if is_ticketed(it.get("name", ""), it.get("category", ""),
+                       (it.get("admit") or {}).get("kind", "")):
+            it["tickets"] = tickets_of(it.get("name", ""))
+    return items
+
+
+
 def admission_of(name, category="", official_type=""):
+    wx, wxkind, wxok = wechat_of(name)
+    wxch = dict(name=wx, type=wxkind, verified=wxok)
     low = name.lower()
     for kws, rule in ADMISSION_RULES:
         for kw in kws:
             if kw.lower() in low:
-                return dict(rule)
+                return _fill_wechat(_clone_rule(rule), wxch)
     # 消费类：一般售票
     if category in ("动漫游戏", "宠物") or any(k in name for k in CONSUMER_KEYWORDS):
-        return dict(
+        return _fill_wechat(dict(
             level="public", kind="购票入场",
             summary="面向大众售票，建议提前买，现场可能限流。",
-            how="面向大众，需购票入场；建议提前在官方渠道买，现场可能限流",
-            where="官方公众号或小程序，也可在大麦、猫眼搜展会名",
-            steps="", deadline="", fee="", verified=False,
-            channels=[_ch("门票", "所有人", "官方公众号或小程序，也可在大麦、猫眼搜展会名",
-                          "开展前 1–2 个月开售", note="热门场次会提前售罄")])
+            how="面向大众，需购票入场；优先走主办方公众号购票，其次大麦、猫眼",
+            where="微信公众号「%s」" % wx,
+            steps="微信搜公众号「%s」→ 关注 → 菜单「购票」" % wx,
+            deadline="", fee="", verified=False,
+            channels=[_ch("门票", "所有人", "微信公众号「%s」" % wx,
+                          "开展前 1–2 个月开售",
+                          note="热门场次会提前售罄；也可在大麦、猫眼搜展会名比价",
+                          wechat=dict(wxch))]), wxch)
     # 其余按专业展惯例：免费预登记，现场凭身份证
-    return dict(
+    return _fill_wechat(dict(
         level="public", kind="预登记免费",
         summary="免费，提前实名预登记最省事；现场凭身份证原件入场。",
         how="专业展惯例：提前在官网或公众号实名预登记可免费入场，现场凭身份证原件核验；未预登记可能需买现场票或无法入场",
-        where="展会官网或官方微信公众号（用展会全名搜索）",
-        steps="", deadline="", fee="", verified=False,
+        where="微信公众号「%s」" % wx,
+        steps="微信搜公众号「%s」→ 关注 → 菜单「观众预登记」" % wx,
+        deadline="", fee="", verified=False,
         channels=[_ch("观众预登记", "行业观众 / 一般观众",
-                      "展会官网或官方微信公众号（用展会全名搜索）",
+                      "微信公众号「%s」" % wx,
                       "开展前 1–2 个月开放，开展前 1–3 天截止",
-                      note="预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进")])
+                      note="预登记免费；逾期未登记可能需买现场票，热门展甚至会限流不让进",
+                      wechat=dict(wxch))]), wxch)
 
 
 def get(url, retry=3):
@@ -685,13 +895,14 @@ def merge(*sources):
             "halls": e.get("halls", ""),
             "organizer": e.get("organizer", ""),
             "official_type": e.get("official_type", ""),
-            "website": e.get("website", ""),
+            "website": (e.get("website") or "").strip(),
+            "website_kind": link_kind(e.get("website") or ""),
             "kind": e.get("kind", "展览排期"),
             "source": e["source"],
             "status": status_of(e["start"], e.get("end")),
         })
     out.sort(key=lambda x: (x["start"], x["name"]))
-    return out
+    return enrich_entry(out)
 
 
 def main():

@@ -147,6 +147,8 @@ main::-webkit-scrollbar{display:none}
 .mini{margin-top:9px;background:var(--surface2);border:1px solid var(--line2);color:var(--accent);
   font-size:12px;padding:7px 11px;border-radius:9px;font-family:inherit;display:inline-block}
 .mini:active{opacity:.7}
+.mini.inline{margin-top:0;margin-left:8px;padding:2px 8px;font-size:11.5px;vertical-align:1px}
+.wxline b{font-weight:600}
 .bell{position:absolute;right:0;top:14px;width:16px;height:16px;color:var(--accent);opacity:0}
 .card.hasrem .bell{opacity:.85}
 .card.hasrem .cardbody{padding-right:17px}
@@ -201,6 +203,9 @@ main::-webkit-scrollbar{display:none}
 .btn.primary{background:var(--accent);color:#04231A}
 .btn.on{background:var(--accent-dim);color:var(--accent)}
 .actions2{display:flex;gap:9px;margin-top:9px}
+.entry{display:flex;flex-wrap:wrap;gap:8px}
+.entry .btn{flex:0 0 auto;height:40px;padding:0 15px;font-size:13px;border:1px solid var(--line2)}
+.entry .btn.primary{border-color:transparent;font-weight:600}
 
 /* ---------- 底部 Tab ---------- */
 .tabbar{flex:none;display:flex;background:rgba(10,12,15,.96);
@@ -668,20 +673,27 @@ function admitRows(e){
       const st = chanState(c);
       const cp = copyName(c.where);
       const off = st && st.c === "dead";
+      const w = c.wechat || null;
+      const wName = (w && w.name) || cp || "";
+      const wType = (w && w.type) || (/小程序/.test(c.where || "") ? "小程序" : "公众号");
+      const other = c.where && !/「/.test(c.where) ? c.where : "";
       return `<div class="chan${off ? " off" : ""}">`
         + `<div class="ch">${esc(c.name)}${st ? `<span class="tag ${st.c}">${st.t}</span>` : ""}</div>`
         + (c.who ? `<div class="line">适用：<b>${esc(c.who)}</b></div>` : "")
         + (c.window ? `<div class="line">开放时间：${esc(c.window)}</div>` : "")
-        + (c.where ? `<div class="line">渠道：${esc(c.where)}</div>` : "")
+        + (wName
+            ? `<div class="line wxline">${esc(wType)}：<b>${esc(wName)}</b>`
+              + `<button class="mini inline" data-copy="${esc(wName)}">复制名称</button>`
+              + (w && w.verified === false ? `<span class="hint"> · 未核实</span>` : "")
+              + `</div>`
+            : "")
+        + (other ? `<div class="line">其它渠道：${esc(other)}</div>` : "")
         + (c.steps ? `<div class="line">路径：${esc(c.steps)}</div>` : "")
         + (c.note ? `<div class="line hint">${esc(c.note)}</div>` : "")
-        + (cp && /小程序|公众号|微信/.test(c.where)
-            ? `<button class="mini" data-copy="${esc(cp)}">复制「${esc(cp.length > 12 ? cp.slice(0, 11) + "…" : cp)}」</button>`
-            : "")
         + `</div>`;
     }).join("");
     h += `<div class="row"><div class="k">通道</div><div class="v">${rows}`
-       + `<div class="hint" style="margin-top:6px">复制名称后到微信顶部搜索框粘贴，即可找到该小程序/公众号</div>`
+       + `<div class="hint" style="margin-top:6px">点「复制名称」，到微信顶部搜索框粘贴即可找到</div>`
        + `</div></div>`;
   } else if (a.deadline) {
     const left = Math.round((pd(a.deadline) - today) / 86400000);
@@ -698,6 +710,42 @@ function admitRows(e){
      + (a.verified ? "主办方官方公告" : "按同类展会通行做法推断，出发前请再核一次主办方公告")
      + `</div></div>`;
   return h;
+}
+
+/* 参加入口：能点一下就去的按钮。
+   优先用官网首页发现的预登记页（真入口），其次展会官网本身，最后票务搜索。
+   商务委备案页没有报名入口，只作为备案信息弱化展示，不给按钮。 */
+function linkKind(e){
+  if (e.website_kind) return e.website_kind;
+  if (!e.website) return "";
+  return e.website.indexOf("sww.sh.gov.cn") >= 0 ? "filing" : "official";
+}
+
+function entryRows(e){
+  const kind = linkKind(e);
+  const sg = e.signup || null;
+  const tick = e.tickets || [];
+  const btns = [];
+  if (sg && sg.url) {
+    btns.push(`<button class="btn primary" data-url="${esc(sg.url)}">${esc(sg.label || "在线预登记")}</button>`);
+  }
+  if (kind === "official" && e.website) {
+    btns.push(`<button class="btn${sg ? "" : " primary"}" data-url="${esc(e.website)}">打开展会官网</button>`);
+  }
+  tick.forEach(t => {
+    btns.push(`<button class="btn" data-url="${esc(t.url)}">${esc(t.name)}搜票</button>`);
+  });
+  if (!btns.length) return "";
+
+  let hint = "";
+  if (sg) hint = "已在该展官网找到预登记页，点按钮直接去登记";
+  else if (kind === "official") hint = "官网首页一般有「观众预登记 / 参观登记」，进站后找一下";
+  else if (tick.length) hint = "在票务平台搜展会名，看到本场即可买票";
+
+  return `<div class="row"><div class="k">参加入口</div><div class="v">`
+    + `<div class="entry">${btns.join("")}</div>`
+    + (hint ? `<div class="hint" style="margin-top:6px">${hint}</div>` : "")
+    + `</div></div>`;
 }
 
 function copyToClipboard(t){
@@ -743,11 +791,12 @@ function openDetail(id){
     <div class="row"><div class="k">场馆</div><div class="v">${esc(e.venue)}${e.district ? "（" + esc(e.district) + "）" : ""}
       ${halls.length ? "<br>" + halls.length + " 个展馆：" + esc(halls.join("、")) : ""}</div></div>
     ${admitRows(e)}
+    ${entryRows(e)}
     ${(e.topics||[]).length ? `<div class="row"><div class="k">主题</div><div class="v">
       ${e.topics.map(t => `<span class="tag topic" style="display:inline-block;margin:0 5px 4px 0">${esc(t)}</span>`).join("")}</div></div>` : ""}
     ${e.organizer ? `<div class="row"><div class="k">主办</div><div class="v">${esc(e.organizer)}</div></div>` : ""}
-    ${e.website ? `<div class="row"><div class="k">链接</div><div class="v">
-      <a href="#" data-url="${esc(e.website)}">${e.website.indexOf("sww.sh.gov.cn") >= 0 ? "市商务委备案详情页 ›" : esc(e.website)}</a></div></div>` : ""}
+    ${linkKind(e) === "filing" ? `<div class="row"><div class="k">备案</div><div class="v">
+      <a href="#" data-url="${esc(e.website)}">市商务委备案信息（无报名入口）›</a></div></div>` : ""}
     <div class="row"><div class="k">来源</div><div class="v">
       ${e.source.split("+").map(s => SRC[s] || s).join(" · ")}</div></div>
     <div class="row"><div class="k">提醒</div><div class="v" id="remLine">
@@ -758,7 +807,6 @@ function openDetail(id){
     </div>
     <div class="actions2">
       <button class="btn primary" id="btnCal">加入系统日历</button>
-      ${e.website ? '<button class="btn" id="btnOpen">打开链接</button>' : ""}
     </div>`;
 
   const sheet = document.getElementById("sheet");
@@ -777,13 +825,7 @@ function openDetail(id){
 
   document.getElementById("btnCal").onclick = () => addCalendar(e);
 
-  const bo = document.getElementById("btnOpen");
-  if (bo) bo.onclick = () => {
-    if (IS_APP && NA.openUrl) NA.openUrl(e.website);
-    else window.open(e.website, "_blank");
-  };
-
-  document.querySelectorAll("#panel a[data-url]").forEach(a => {
+  document.querySelectorAll("#panel [data-url]").forEach(a => {
     a.onclick = ev => {
       ev.preventDefault();
       const u = a.dataset.url;
@@ -971,6 +1013,13 @@ function finishSync(silent, ok){
   if (!silent) toast(ok ? "已是最新数据" : "暂时无法连接，继续使用本地数据");
 }
 
+// 远端时间戳不比本地新就不算更新：本地可能是刚装的新版内置数据
+function newerThanLocal(mf){
+  const local = String(DATA.generated_at || DATA.updated || "");
+  const remote = String((mf && (mf.generated_at || mf.updated)) || "");
+  return !(remote && local && remote <= local);
+}
+
 function sync(silent){
   if (syncing) return;
   if (!IS_APP || !NA.fetch) { if (!silent) toast("请在 App 内检查更新"); return; }
@@ -984,6 +1033,8 @@ function sync(silent){
       ENDPOINTS = [...new Set(mf.endpoints.concat(ENDPOINTS))];
     }
     if (mf.version === (DATA.version || "")) { finishSync(silent, true); return; }
+    // 防降级：远端生成时间不比本地新就当作没有更新，避免线上还没跟上时把新内置数据打回去
+    if (!newerThanLocal(mf)) { finishSync(silent, true); return; }
     tryEndpoints(0, "latest.json", function(raw, base){
       let o = null;
       try { o = JSON.parse(raw); } catch(e) {}
