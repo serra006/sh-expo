@@ -20,7 +20,9 @@
    "district": "徐汇区",
    "category": "开发者大会",
    "kind_type": "dev",
-   "topics": ["AI"],
+   "topics": [
+    "AI"
+   ],
    "featured": true,
    "featured_tag": "腾讯官方",
    "organizer": "腾讯云开发者社区",
@@ -60,7 +62,8 @@
     "label": "腾讯云社区报名"
    },
    "intro": "腾讯云社区 AI 公开课「全国城市巡回计划」上海站，首站深圳已办完。上午专家分享，下午动手实践工作坊。适合想了解 AI 如何进入真实工作流的开发者。",
-   "note": "会场在漕河泾会议中心，地址需报名审核通过后确认。"
+   "note": "会场在漕河泾会议中心，地址需报名审核通过后确认。",
+   "verified_at": "2026-11-14"
   },
   {
    "id": "DEV-agenthack-sh-20261212",
@@ -75,7 +78,9 @@
    "district": "徐汇区",
    "category": "开发者大会",
    "kind_type": "dev",
-   "topics": ["AI"],
+   "topics": [
+    "AI"
+   ],
    "featured": true,
    "featured_tag": "Qoder 官方",
    "organizer": "Elastic 社区 × 阿里云 × Qoder",
@@ -115,7 +120,8 @@
     "label": "活动行报名"
    },
    "intro": "一天的黑客松式实战：上午主题分享 + Qoder AI Coding 工作坊，下午 4 小时集中创作，现场交付可运行的 Agent 原型。Qoder 是唯一指定 AI Coding 工具，研发到场答疑。",
-   "note": "限额 70 人，是这份清单里最适合「动手」的一场。"
+   "note": "限额 70 人，是这份清单里最适合「动手」的一场。",
+   "verified_at": "2026-11-14"
   },
   {
    "id": "DEV-qnx-sh-20261203",
@@ -130,7 +136,10 @@
    "district": "静安区",
    "category": "开发者大会",
    "kind_type": "dev",
-   "topics": ["AI", "汽车"],
+   "topics": [
+    "AI",
+    "汽车"
+   ],
    "featured": false,
    "featured_tag": "",
    "organizer": "QNX（BlackBerry）",
@@ -179,7 +188,8 @@
     "qr_only": true
    },
    "intro": "面向智能汽车开发者的年度大会，主题是物理 AI 与软件定义汽车。议题覆盖 QNX Hypervisor、QNX SDP 8.0、QNX OS for Safety 8、数字座舱，重点在车规级功能安全与网络安全。",
-   "note": "官方未公布独立报名链接，报名在公众号推文内。"
+   "note": "官方未公布独立报名链接，报名在公众号推文内。",
+   "verified_at": "2026-11-14"
   },
   {
    "id": "DEV-bci-pujiang-20261203",
@@ -194,7 +204,10 @@
    "district": "闵行区",
    "category": "开发者大会",
    "kind_type": "dev",
-   "topics": ["AI", "医疗健康"],
+   "topics": [
+    "AI",
+    "医疗健康"
+   ],
    "featured": false,
    "featured_tag": "",
    "organizer": "市科委 / 闵行区政府 / 虹桥国际中央商务区管委会 / 临港实验室",
@@ -235,7 +248,126 @@
     "qr_only": true
    },
    "intro": "国家级脑机接口产业会议，含国际开发者大会、竞技赛、投融资论坛、供应链大会、新品发布会。现场会发布国家级数据平台与数据底座「游刃 1.1」。",
-   "note": "报名是审核制，截止 11 月 25 日，比其他几场都要早。"
+   "note": "报名是审核制，截止 11 月 25 日，比其他几场都要早。",
+   "verified_at": "2026-11-14"
+  },
+  {
+   "id": "DEV-ddc2026-20261205",
+   "name": "DDC2026 地瓜机器人开发者大会",
+   "subtitle": "好奇成真 · 48 小时全链路机器人黑客松",
+   "start": "2026-12-05",
+   "end": "2026-12-07",
+   "time_text": "3 天（黑客松 48 小时，实验室不闭馆）",
+   "venue": "上海张江科学会堂",
+   "venue_short": "张江",
+   "address": "上海市浦东新区张江科学会堂",
+   "district": "浦东新区",
+   "category": "开发者大会",
+   "kind_type": "dev",
+   "topics": [
+    "AI",
+    "机器人"
+   ],
+   "featured": true,
+   "featured_tag": "30 万奖池",
+   "organizer": "地瓜机器人（D-Robotics）",
+   "website": "",
+   "website_kind": "filing",
+   "kind": "开发者活动",
+   "source": "DEV",
+   "verified_at": "2026-11-15",
+   "halls": "",
+   "official_type": "",
+   "admit": {
+    "level": "public",
+    "kind": "免费需审核",
+    "summary": "免费报名，提交「好奇心证明」后 72 小时内审核，入围者收到 DDC2026 好奇心护照。提供会期免费住宿（双人标间）、往返交通补贴与全程餐饮补贴。",
+    "how": "微信关注「地瓜机器人」公众号，在招募推文点「阅读原文」或扫文中二维码填报名表，提交你想让 AI 干什么实事，等待审核通知",
+    "where": "地瓜机器人微信公众号",
+    "steps": "",
+    "deadline": "2026-11-30",
+    "fee": "免费",
+    "verified": true,
+    "channels": [
+     {
+      "name": "公众号报名（扫码填表）",
+      "who": "机器人 / 具身智能 / 嵌入式 / 算法开发者，也设新手赛道（提供图形化 + AI 辅助编程）",
+      "where": "地瓜机器人微信公众号",
+      "window": "11-02 开放，11-30 截止",
+      "steps": "微信搜「地瓜机器人」→ 关注 → 找 DDC2026 招募推文 → 点「阅读原文」或扫码填表",
+      "note": "需提交「好奇心证明」，即在报名表里说明想让 AI 干什么实事；2-4 人组队，可跨校跨公司；现场借用 RDK 开发套件，不用自带硬件",
+      "deadline": "2026-11-30",
+      "state": "",
+      "wechat": null
+     }
+    ],
+    "wechat": null
+   },
+   "signup": {
+    "url": "",
+    "label": "公众号内报名（11-30 截止）",
+    "qr_only": true
+   },
+   "intro": "地瓜机器人年度开发者大会，第四届，落在张江科学会堂。核心是 48 小时垂直机器人黑客松（30 万现金奖池、每人 10 亿 Token、RDK 套件现场借用），另有 3 大分论坛、12 场技术工作坊（Ultralytics 授 YOLO 实战、人形机器人组装、端侧智能）、150+ 机器人品类现场上手。阿里云、百度智能云、腾讯云、Qoder 都是大会合作伙伴。",
+   "note": "报名 11-30 截止，比活动本身早 5 天；不写代码也能报新手赛道。"
+  },
+  {
+   "id": "DEV-payathon-20261226",
+   "name": "支付宝 AI 付 PAYATHON 2026 年度黑客松",
+   "subtitle": "Build & Bill · 用真实付费验证 AI 产品",
+   "start": "2026-12-26",
+   "end": "2026-12-26",
+   "time_text": "决赛路演 1 天（赛事 9-21 起，开发与提交全程线上）",
+   "venue": "线上开发 + 线下决赛（城市待公布）",
+   "venue_short": "线上",
+   "address": "线上报名与作品提交；决赛场地由主办方另行公布",
+   "district": "",
+   "category": "开发者大会",
+   "kind_type": "dev",
+   "topics": [
+    "AI"
+   ],
+   "featured": true,
+   "featured_tag": "20 万奖池",
+   "organizer": "支付宝 AI 付 × 观猹 × CBI 传媒",
+   "website": "https://aipay.alipay.com/community/events/payathon-2026",
+   "website_kind": "official",
+   "kind": "开发者活动",
+   "source": "DEV",
+   "verified_at": "2026-11-15",
+   "halls": "",
+   "official_type": "",
+   "admit": {
+    "level": "public",
+    "kind": "免费在线报名",
+    "summary": "免费参赛，个人或 2-5 人团队均可。五条赛道独立评选，总奖池 20 万元。核心门槛：作品须正式部署并接入至少一款支付宝 AI 付产品，跑通付款与交付。",
+    "how": "在支付宝 AI 付开放社区大赛页登录支付宝账号，填写参赛信息即可报名，暂无完整产品也能先报名后提交",
+    "where": "线上（支付宝 AI 付开放社区）",
+    "steps": "",
+    "deadline": "2026-12-01",
+    "fee": "免费",
+    "verified": true,
+    "channels": [
+     {
+      "name": "官网在线报名",
+      "who": "想把 AI 应用 / Skill / Agent 做成生意的独立开发者与 2-5 人团队",
+      "where": "aipay.alipay.com 开放社区",
+      "window": "9-21 开放，12-01 23:59 截止",
+      "steps": "打开大赛页 → 支付宝登录 → 填参赛信息 → 选赛道 → 提交作品",
+      "note": "报名后作品提交截止 12-09；12-10~14 初选，TOP30 晋级；12-26 线下路演 10 分钟",
+      "deadline": "2026-12-01",
+      "state": "",
+      "wechat": null
+     }
+    ],
+    "wechat": null
+   },
+   "signup": {
+    "url": "https://aipay.alipay.com/community/events/payathon-2026",
+    "label": "官网报名"
+   },
+   "intro": "支付宝 AI 付的年度黑客松，五条赛道：Vibe Pay（AI 应用收款）、Skill Pay（技能收款）、Machine Pay（按量付费）、Token Pay（连续订阅）、Agent Pay（智能体支付）。评审不只比技术，更看真实付费用户数。阿里云百炼提供 Token 补贴与 1V1 技术陪跑。",
+   "note": "线上为主，决赛城市主办方尚未公布，可能不在上海。报名 12-01 截止。"
   }
  ]
 }

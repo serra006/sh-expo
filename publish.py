@@ -67,7 +67,11 @@ def merge_dev(payload):
 
     放在发布层而不是 fetch.py：这类活动没有稳定的机器可读源，靠人工清单维护，
     和展会抓取是两条完全独立的链路，混在一起改反而容易互相牵连。
-    已结束的活动直接剔除，口径与展会一致（App 只展示未结束的）。
+
+    data/dev_events.json 是开发者大会的唯一真源，因此：
+      - 清单里改过的活动（改期、换报名链接、改文案）要能覆盖旧版本，否则改了不生效；
+      - 清单里已过期或已删掉的活动要从结果里清掉，否则会一直挂在列表上。
+    展会数据原样保留，只按 id 覆盖 kind_type=="dev" 的条目，不会误伤展会。
     """
     path = os.path.join(ROOT, "data", "dev_events.json")
     if not os.path.exists(path):
@@ -91,23 +95,38 @@ def merge_dev(payload):
         return "past" if today > en else "ongoing"
 
     events = payload.get("events") or []
-    known = set(e.get("id") for e in events)
-    added, dropped = [], []
+    dropped = []
+
+    # 先按清单算出「该保留哪些、各自是什么状态」
+    keep, order = {}, []
     for e in devs:
         st = status_of(e)
         if st == "past":
             dropped.append(e.get("name", "?"))
             continue
-        if e.get("id") in known:
-            continue
         e["status"] = st
         e["kind_type"] = "dev"
-        added.append(e)
+        keep[e.get("id")] = e
+        order.append(e.get("id"))
 
-    if added:
-        payload["events"] = events + added
-        payload["count"] = len(payload["events"])
-    return len(added), dropped
+    # 原有数据里凡是 dev，一律以清单为准：清单有的按清单覆盖，清单没有的直接丢弃
+    merged, placed = [], set()
+    for e in events:
+        if e.get("kind_type") != "dev":
+            merged.append(e)
+            continue
+        eid = e.get("id")
+        if eid in keep and eid not in placed:
+            merged.append(keep[eid])
+            placed.add(eid)
+
+    # 新增的按清单顺序追加到末尾
+    fresh = [keep[i] for i in order if i not in placed]
+    merged.extend(fresh)
+
+    payload["events"] = merged
+    payload["count"] = len(merged)
+    return len(fresh), dropped
 
 
 def validate(payload, prev, min_ratio, min_count, max_age_hours):
