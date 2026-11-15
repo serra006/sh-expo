@@ -1,6 +1,6 @@
 {
  "ok": true,
- "checked_at": "2026-11-15 10:20:43",
+ "checked_at": "2026-11-15 10:25:40",
  "version": "f708662ddfa2",
  "count": 103,
  "calendar_count": 9,
@@ -14,5 +14,5 @@
   "GOV+NECC": 2,
   "DEV": 6
  },
- "publish": "跳过（--no-upload）"
+ "publish": "跳过（未配置 R2 环境变量）"
 }
