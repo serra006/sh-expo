@@ -784,6 +784,18 @@ function copyName(s){
   return m ? m[1] : (s || "");
 }
 
+/* 公众号 / 小程序名称：只认数据里明确写的 wechat.name。
+   绝不拿通道的 where 顶替 —— where 说明的是「入口在哪」，
+   之前就把「官方公告二维码」当成了公众号名，还配了复制按钮。
+   这里再兜一道：剥掉「官方微信公众号」这类后缀，纯描述性文字一律判空。 */
+const WX_JUNK = /二维码|扫码|扫一扫|公告|官网|网址|微信号|微信公众号|公众号|链接|通知|原文/;
+const WX_SUFFIX = /(的)?(官方)?(微信)?公众号$|官方微信$|微信号$/;
+function wxName(w){
+  if (!w || !w.name) return "";
+  const n = String(w.name).trim().replace(WX_SUFFIX, "").replace(/[·\-—、,，\s]+$/, "");
+  return (!n || n.length < 2 || WX_JUNK.test(n)) ? "" : n;
+}
+
 function admitRows(e){
   const a = e.admit;
   if (!a) return "";
@@ -796,31 +808,45 @@ function admitRows(e){
         + `</div></div>`;
 
   if (chans.length) {
+    let anyWx = false;
     const rows = chans.map(c => {
       const st = chanState(c);
-      const cp = copyName(c.where);
       const off = st && st.c === "dead";
       const w = c.wechat || null;
-      const wName = (w && w.name) || cp || "";
+      const wName = wxName(w);
       const wType = (w && w.type) || (/小程序/.test(c.where || "") ? "小程序" : "公众号");
-      const other = c.where && !/「/.test(c.where) ? c.where : "";
+      /* 没有账号名、但入口是二维码：说清楚「只能扫码」，不要硬造一个名字出来 */
+      const text = [c.where, c.steps, a.how].join(" ");
+      const qr = !wName && /二维码|扫码|扫一扫/.test(text);
+      const other = (c.where && !/「/.test(c.where) && c.where !== wName) ? c.where : "";
+      if (wName) anyWx = true;
+
+      let wxLine = "";
+      if (wName) {
+        wxLine = `<div class="line wxline">${esc(wType)}：<b>${esc(wName)}</b>`
+          + `<button class="mini inline" data-copy="${esc(wName)}">复制名称</button>`
+          + (w && w.verified === false ? `<span class="hint"> · 未核实</span>` : "")
+          + `</div>`;
+      } else if (qr) {
+        wxLine = `<div class="line">入口：<b>主办方公告里的二维码</b>`
+          + `<span class="hint"> · 只能扫码，App 打不开</span></div>`;
+      }
+      /* 二维码那句已经把 where 说完了，别再重复一遍「其它渠道」 */
+      const otherLine = (other && !(qr && /二维码|扫码/.test(other)))
+        ? `<div class="line">其它渠道：${esc(other)}</div>` : "";
+
       return `<div class="chan${off ? " off" : ""}">`
         + `<div class="ch">${esc(c.name)}${st ? `<span class="tag ${st.c}">${st.t}</span>` : ""}</div>`
         + (c.who ? `<div class="line">适用：<b>${esc(c.who)}</b></div>` : "")
         + (c.window ? `<div class="line">开放时间：${esc(c.window)}</div>` : "")
-        + (wName
-            ? `<div class="line wxline">${esc(wType)}：<b>${esc(wName)}</b>`
-              + `<button class="mini inline" data-copy="${esc(wName)}">复制名称</button>`
-              + (w && w.verified === false ? `<span class="hint"> · 未核实</span>` : "")
-              + `</div>`
-            : "")
-        + (other ? `<div class="line">其它渠道：${esc(other)}</div>` : "")
+        + wxLine
+        + otherLine
         + (c.steps ? `<div class="line">路径：${esc(c.steps)}</div>` : "")
         + (c.note ? `<div class="line hint">${esc(c.note)}</div>` : "")
         + `</div>`;
     }).join("");
     h += `<div class="row"><div class="k">通道</div><div class="v">${rows}`
-       + `<div class="hint" style="margin-top:6px">点「复制名称」，到微信顶部搜索框粘贴即可找到</div>`
+       + (anyWx ? `<div class="hint" style="margin-top:6px">点「复制名称」，到微信顶部搜索框粘贴即可找到</div>` : "")
        + `</div></div>`;
   } else if (a.deadline) {
     const left = Math.round((pd(a.deadline) - today) / 86400000);
@@ -897,10 +923,14 @@ function entryRows(e){
     }
     /* 只有二维码的活动没有可点网址，也要明确告诉用户入口在哪，不能让页面看起来没入口 */
     if (sg && sg.qr_only) {
+      const a0 = e.admit || {};
+      const cw = (a0.channels || []).map(c => c.wechat).filter(Boolean)[0] || null;
+      const wx = wxName(a0.wechat) || wxName(cw);
       return `<div class="row"><div class="k">报名</div><div class="v">`
         + `<span class="tag open">${esc(sg.label || "扫码报名")}</span>`
-        + `<div class="hint" style="margin-top:6px">该活动只有二维码入口，没有可点击的网址。`
-        + `到主办方公告里扫码，或按下方「通道」说明操作。</div>`
+        + `<div class="hint" style="margin-top:6px">没有可点击的报名网址，只能扫码。`
+        + (wx ? `入口在公众号「${esc(wx)}」的大会公告里。` : `入口在主办方公告里的二维码。`)
+        + `</div>`
         + `</div></div>`;
     }
     return "";

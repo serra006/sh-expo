@@ -11,6 +11,7 @@ import collections
 import hashlib
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 
@@ -60,6 +61,56 @@ def dump(path, obj, pretty=False):
 
 def source_counts(events):
     return dict(collections.Counter(e.get("source", "?") for e in events))
+
+
+# ---------------------------------------------------------------- 公众号名称清洗
+# 出过的事故：某场大会的报名通道写的是「官方公告二维码」（说的是入口形式，不是账号名），
+# App 却把它当公众号名显示成「公众号：官方公告二维码」+「复制名称」。
+# 所以这里做一次归一：剥掉「微信公众号」这类后缀，纯描述性文字判空。
+WECHAT_JUNK = re.compile(
+    r"二维码|扫码|扫一扫|公告|官网|网址|链接|通知|原文|待定|未知|暂无"
+    r"|^无$|^-+$|^官方$|^微信$|^公众号$|请在微信")
+WECHAT_SUFFIX = re.compile(r"(的)?(官方)?(微信)?公众号$|官方微信$|微信号$")
+
+
+def clean_wechat(w):
+    """返回清洗后的 wechat dict，或 None（表示「这不是一个可用账号名」）。"""
+    if not isinstance(w, dict):
+        return None
+    name = str(w.get("name") or "").strip()
+    if not name:
+        return None
+    # 先剥后缀：「地瓜机器人微信公众号」→「地瓜机器人」
+    stripped = WECHAT_SUFFIX.sub("", name).strip(" ·-—、,，")
+    # 剥完只剩描述性文字，或原文本身就是「官方公告二维码」这类，一律判空
+    if not stripped or len(stripped) < 2 or WECHAT_JUNK.search(stripped):
+        return None
+    out = dict(w)
+    out["name"] = stripped
+    return out
+
+
+def sanitize_wechat(events):
+    """就地清洗所有 admit / channels 上的 wechat，返回改动条数。
+
+    展会与大会一起洗：fetch.py 的规则文案也可能写出「微信小程序「xxx」」之外的形态，
+    放在发布层统一兜底，比在每个数据源里各写一遍更不容易漏。
+    """
+    changed = 0
+    for e in events:
+        a = e.get("admit") or {}
+        holders = [a] + list(a.get("channels") or [])
+        for h in holders:
+            if "wechat" not in h:
+                continue
+            before = h.get("wechat")
+            if not before:
+                continue
+            after = clean_wechat(before)
+            if after != before:
+                h["wechat"] = after
+                changed += 1
+    return changed
 
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -360,6 +411,10 @@ def main():
     cal_n = len(payload.get("calendar") or [])
     if cal_n:
         print("[DEV] 年度大会日历：%d 场（只有月份，无确切日期，不进列表）" % cal_n)
+
+    wx_fixed = sanitize_wechat(events)
+    if wx_fixed:
+        print("[DEV] 公众号名称清洗：%d 处（「官方公告二维码」这类描述不当账号名）" % wx_fixed)
 
     if not args.no_probe:
         st = probe_links(events)

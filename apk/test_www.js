@@ -149,6 +149,53 @@ if (deadUrl) {
   check("死链给出失效提示", false, "没有带网址的大会");
 }
 
+// 1.9 公众号名称：不能拿通道的「入口位置」冒充账号名（线上把「官方公告二维码」显示成了公众号）
+function pushTest(o){ api.getEVENTS().push(o); return o.id; }
+const qrEvent = {
+  id: "TEST-qr-only", kind_type: "dev", name: "二维码通道测试", category: "开发者大会",
+  start: "2026-12-03", end: "2026-12-06", venue: "上海（会场待公布）", venue_short: "上海",
+  district: "闵行区", source: "DEV", topics: ["AI"], featured: false,
+  website: "", website_kind: "filing", status: "upcoming", organizer: "测试主办",
+  admit: {
+    level: "public", kind: "需审核", summary: "扫码提交参会申请", how: "扫描官方公告中的二维码填表",
+    where: "官方公告二维码", deadline: "2026-11-25", verified: true, fee: "", wechat: null,
+    channels: [{ name: "扫码申请", who: "从业者", where: "官方公告二维码", window: "11 月 25 日前",
+                 steps: "", note: "", deadline: "2026-11-25", state: "", wechat: null }],
+  },
+  signup: { url: "", label: "扫码申请（11-25 截止）", qr_only: true },
+  intro: "", note: "", verified_at: "2026-11-15",
+};
+pushTest(qrEvent);
+api.openDetail("TEST-qr-only");
+check("二维码入口不再冒充公众号名",
+  !els.panel.innerHTML.includes("公众号：官方公告二维码"));
+check("二维码入口说明只能扫码", els.panel.innerHTML.includes("只能扫码"));
+check("无账号名时不给复制按钮",
+  !els.panel.innerHTML.includes('data-copy="官方公告二维码"'));
+check("无账号名时不给复制提示",
+  !els.panel.innerHTML.includes("点「复制名称」"));
+
+// 脏名字要能自动清洗：后缀剥掉、纯描述性文字判空
+const dirty = JSON.parse(JSON.stringify(qrEvent));
+dirty.id = "TEST-wx-suffix";
+dirty.admit.channels[0].where = "微信公众号";
+dirty.admit.channels[0].wechat = { name: "地瓜机器人微信公众号", type: "公众号" };
+pushTest(dirty);
+api.openDetail("TEST-wx-suffix");
+check("公众号后缀被剥掉", els.panel.innerHTML.includes("地瓜机器人")
+  && !els.panel.innerHTML.includes("地瓜机器人微信公众号"));
+
+const junk = JSON.parse(JSON.stringify(qrEvent));
+junk.id = "TEST-wx-junk";
+junk.admit.wechat = { name: "官方公告二维码", type: "公众号" };
+junk.admit.channels[0].wechat = { name: "官方公告二维码", type: "公众号" };
+pushTest(junk);
+api.openDetail("TEST-wx-junk");
+check("脏公众号名不进界面",
+  !els.panel.innerHTML.includes('data-copy="官方公告二维码"'));
+api.getEVENTS().splice(-3, 3);
+document.getElementById("sheet").classList.remove("show");
+
 // 1.8 全年大会日历：只有月份、没有确切日期的大会不进列表，单独给一块
 const CAL = api.getCAL();
 check("年度日历数据已加载", CAL.length > 0, CAL.length + " 场");
