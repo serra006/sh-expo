@@ -3,10 +3,10 @@
  "count": 103,
  "calendar_count": 9,
  "new_count": 0,
- "updated": "2026-11-15 07:10:01",
- "generated_at": "2026-11-15 07:55:11",
+ "updated": "2026-11-15 08:00:58",
+ "generated_at": "2026-11-15 08:01:03",
  "latest_bytes": 175764,
- "latest_sha256": "4deb7039e3e694e18d292df3e37e73db86bbd6d8ef047de63d1687bcf647721f",
+ "latest_sha256": "e120b9248ce0109b64e71aec5b626d14d7d9d91e701951768347d3181217d63a",
  "endpoints": [
   "https://serra006.github.io/sh-expo/public",
   "https://cdn.jsdelivr.net/gh/serra006/sh-expo@main/public",
