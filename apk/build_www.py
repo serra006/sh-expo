@@ -808,7 +808,7 @@ function admitRows(e){
         + `</div></div>`;
 
   if (chans.length) {
-    let anyWx = false;
+    let anyWx = false, anyUnverified = false;
     const rows = chans.map(c => {
       const st = chanState(c);
       const off = st && st.c === "dead";
@@ -820,12 +820,19 @@ function admitRows(e){
       const qr = !wName && /二维码|扫码|扫一扫/.test(text);
       const other = (c.where && !/「/.test(c.where) && c.where !== wName) ? c.where : "";
       if (wName) anyWx = true;
+      const unverified = !!(w && w.verified === false);
+      if (wName && unverified) anyUnverified = true;
 
       let wxLine = "";
       if (wName) {
-        wxLine = `<div class="line wxline">${esc(wType)}：<b>${esc(wName)}</b>`
+        /* 措辞必须区分「确认的账号」和「推测的搜索词」。
+           展会那 80% 的名字是按展会名剥离年份/届次后机械生成的（wechat_of() 的兜底分支），
+           真实公众号极少用全名，写成「公众号：XXX」会让人以为复制过去一定能搜到，
+           搜不到就变成 App 的错。这里改成「微信搜：XXX · 未核实，可能搜不到」。 */
+        const label = unverified ? (wType === "小程序" ? "小程序" : "微信搜") : wType;
+        wxLine = `<div class="line wxline">${esc(label)}：<b>${esc(wName)}</b>`
           + `<button class="mini inline" data-copy="${esc(wName)}">复制名称</button>`
-          + (w && w.verified === false ? `<span class="hint"> · 未核实</span>` : "")
+          + (unverified ? `<span class="hint"> · 未核实，可能搜不到</span>` : "")
           + `</div>`;
       } else if (qr) {
         wxLine = `<div class="line">入口：<b>主办方公告里的二维码</b>`
@@ -846,7 +853,12 @@ function admitRows(e){
         + `</div>`;
     }).join("");
     h += `<div class="row"><div class="k">通道</div><div class="v">${rows}`
-       + (anyWx ? `<div class="hint" style="margin-top:6px">点「复制名称」，到微信顶部搜索框粘贴即可找到</div>` : "")
+       + (anyWx
+           ? `<div class="hint" style="margin-top:6px">` + (anyUnverified
+               ? "标「未核实」的不是确认过的账号，是按展会名推测的搜索词；搜不到就改用展会全名再试，或从主办方官网进"
+               : "点「复制名称」，到微信顶部搜索框粘贴即可找到")
+             + `</div>`
+           : "")
        + `</div></div>`;
   } else if (a.deadline) {
     const left = Math.round((pd(a.deadline) - today) / 86400000);

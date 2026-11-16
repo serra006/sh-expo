@@ -335,7 +335,14 @@ check("普通专业展未关闭", api.admitClosed(generic) === false);
 check("普通专业展显示具体公众号名",
   els.panel.innerHTML.includes(generic.admit.channels[0].wechat.name),
   generic.admit.channels[0].wechat.name);
-check("详情页有「公众号：」标签", /公众号：|小程序：/.test(els.panel.innerHTML));
+check("未核实的名字标成「微信搜」而不是「公众号」",
+  /微信搜：/.test(els.panel.innerHTML));
+check("未核实名带「可能搜不到」提示",
+  els.panel.innerHTML.includes("可能搜不到"));
+check("底部说明这是推测的搜索词",
+  els.panel.innerHTML.includes("推测的搜索词"));
+check("不再承诺「粘贴即可找到」",
+  !els.panel.innerHTML.includes("粘贴即可找到"));
 check("详情页不再出现公用词条", !els.panel.innerHTML.includes("用展会全名搜索"));
 check("有复制名称按钮",
   els.panel.innerHTML.indexOf('data-copy="' + generic.admit.channels[0].wechat.name + '"') >= 0);
