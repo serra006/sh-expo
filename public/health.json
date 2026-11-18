@@ -1,11 +1,11 @@
 {
  "ok": true,
- "checked_at": "2026-11-17 12:03:47",
- "version": "9dacf7fab422",
+ "checked_at": "2026-11-18 11:01:39",
+ "version": "8799c7a67192",
  "count": 102,
  "calendar_count": 9,
  "new_count": 0,
- "removed_count": 1,
+ "removed_count": 0,
  "sources": {
   "GOV+SNIEC": 19,
   "SNIEC": 10,
