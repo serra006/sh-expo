@@ -1,11 +1,11 @@
 {
  "ok": true,
- "checked_at": "2026-11-19 10:43:40",
- "version": "f5a350c0244d",
+ "checked_at": "2026-11-20 10:28:25",
+ "version": "f46e40a0edc4",
  "count": 97,
  "calendar_count": 9,
- "new_count": 0,
- "removed_count": 5,
+ "new_count": 2,
+ "removed_count": 2,
  "sources": {
   "GOV": 55,
   "NECC": 5,
