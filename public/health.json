@@ -1,18 +1,18 @@
 {
  "ok": true,
- "checked_at": "2026-11-23 09:28:10",
- "version": "b6660174773f",
- "count": 98,
+ "checked_at": "2026-11-23 09:54:31",
+ "version": "3f7172b982f9",
+ "count": 90,
  "calendar_count": 9,
- "new_count": 2,
- "removed_count": 13,
+ "new_count": 0,
+ "removed_count": 8,
  "sources": {
-  "GOV": 53,
-  "NECC": 5,
-  "GOV+NECC": 2,
+  "GOV": 48,
+  "NECC": 3,
   "GOV+SNIEC": 17,
   "SNIEC": 9,
+  "GOV+NECC": 1,
   "DEV": 12
  },
- "publish": "跳过（--no-upload）"
+ "publish": "跳过（未配置 R2 环境变量）"
 }
