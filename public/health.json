@@ -1,15 +1,15 @@
 {
  "ok": true,
- "checked_at": "2026-11-24 13:25:52",
- "version": "b90d764162ce",
- "count": 88,
+ "checked_at": "2026-11-25 12:24:29",
+ "version": "415b7a4d654a",
+ "count": 90,
  "calendar_count": 9,
- "new_count": 0,
- "removed_count": 2,
+ "new_count": 3,
+ "removed_count": 1,
  "sources": {
-  "NECC": 3,
   "GOV+SNIEC": 17,
-  "GOV": 47,
+  "GOV": 50,
+  "NECC": 2,
   "SNIEC": 8,
   "GOV+NECC": 1,
   "DEV": 12
