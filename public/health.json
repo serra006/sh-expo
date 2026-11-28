@@ -1,16 +1,16 @@
 {
  "ok": true,
- "checked_at": "2026-11-27 11:45:27",
- "version": "0963191ac15f",
- "count": 89,
+ "checked_at": "2026-11-28 11:25:23",
+ "version": "b89ecb27fa83",
+ "count": 87,
  "calendar_count": 9,
  "new_count": 0,
- "removed_count": 0,
+ "removed_count": 2,
  "sources": {
-  "GOV+SNIEC": 17,
-  "GOV": 49,
+  "GOV": 48,
   "NECC": 2,
   "SNIEC": 8,
+  "GOV+SNIEC": 16,
   "GOV+NECC": 1,
   "DEV": 12
  },
